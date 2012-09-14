@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" xmlns:styles="styles.*">
+	<!-- host component -->
+	
+	<fx:Declarations>
+		<styles:GraphicsLib id="graphicsLib"/>
+	</fx:Declarations>
+	
+	<fx:Metadata>
+		[HostComponent("spark.components.SkinnableContainer")]
+	</fx:Metadata>
+	
+	<!-- states -->
+	<s:states>
+		<s:State name="disabled" />
+		<s:State name="normal" />
+	</s:states>
+	
+	<s:Path y="30"
+			data = " M 0 0
+			L 30 0
+			L 30 30
+			L 0 0">
+		<s:fill>
+			<s:SolidColor color="{graphicsLib.getOuterBorderColor()}"/>
+		</s:fill>
+	</s:Path>
+	
+	<s:Rect id="outerRect" x="30" width="100%" height="100%">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="{graphicsLib.getOuterBorderColor()}"/>
+				<s:GradientEntry color="{graphicsLib.getOuterBorderColor()}"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<!--<s:Rect x="40" y="10" width="{outerRect.width - 20}" height="{outerRect.height - 20}">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="0xaa8888"/>
+				<s:GradientEntry color="0xaa8888"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>-->
+	
+	<s:Group id="contentGroup" x="30" width="100%" height="100%">
+	
+	</s:Group>
+	
+</s:Skin>

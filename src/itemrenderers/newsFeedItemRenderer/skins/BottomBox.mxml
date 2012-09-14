@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		creationComplete="onCreationComplete()">
+	<!-- host component -->
+	<fx:Metadata>
+		[HostComponent("spark.components.SkinnableContainer")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import styles.GraphicsLib;
+			[Bindable]public var forCompiler:BottomBox;
+			
+			[Bindable]private var _color:int;
+			
+			private function onCreationComplete():void{
+				var g:GraphicsLib = new GraphicsLib();
+				_color = g.getBottomBoxColor();
+			}
+		]]>
+	</fx:Script>
+	
+	<!-- states -->
+	<s:states>
+		<s:State name="disabled" />
+		<s:State name="normal" />
+	</s:states>
+	
+	<s:Path x="{bottomRect.width/2}"
+			data = " M -30 0
+			L 0 -10
+			L 30 0
+			L -30 0">
+		<s:fill>
+			<s:SolidColor color="{_color}"/>
+		</s:fill>
+	</s:Path>
+	
+	<s:Rect id="bottomRect" width="100%" height="100%">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="{_color}"/>
+				<s:GradientEntry color="{_color}"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Group id="contentGroup" width="100%" height="100%">
+	</s:Group>
+</s:Skin>

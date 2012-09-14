@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ViewNavigatorApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							xmlns:s="library://ns.adobe.com/flex/spark" firstView="views.loginLogout.LoginView" 
+							creationComplete="creationCompleteHandler(event)"
+							splashScreenImage="@Embed('assets/splash/SplashScreen500x850v2.png')"
+							splashScreenMinimumDisplayTime="1000"
+							splashScreenScaleMode="zoom">
+	
+	<fx:Style source="styles/Style1.css"/>
+
+	<fx:Declarations>
+		<s:ContentCache id="imageCache" maxCacheEntries="300"/>
+	</fx:Declarations>
+	
+	<s:navigationContent>
+		<s:Button id="mainMenuButton" icon="@Embed('assets/images/icons/metalList001.png')"
+				  click="openMainMenuCallout(event,mainMenuButton, spark.components.ContentBackgroundAppearance.NONE)"/>
+	</s:navigationContent>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.facebook.graph.Facebook;
+			import com.facebook.graph.FacebookMobile;
+			import com.squidzoo.eventSystem.EventCentral;
+			import com.squidzoo.eventSystem.events.CustomDataEvent;
+			
+			import customComponents.callouts.MainMenuCallout;
+			
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			
+			import services.Config;
+			import services.NotificationPollService;
+			
+			import spark.events.PopUpEvent;
+			
+			import views.AboutView;
+			import views.MoreAppsView;
+			import views.SettingsView;
+			import views.chat.AvailableForChatView;
+			import views.checkin.CheckinView;
+			import views.eventsViews.EventsView;
+			import views.eventsViews.SingleEventView;
+			import views.friendRequests.FriendsRequestsView;
+			import views.friends.FriendsView;
+			import views.groups.GroupsView;
+			import views.loginLogout.LoginView;
+			import views.mainMenu.MainMenuView;
+			import views.messages.MessagesView;
+			import views.newsfeed.NewsFeedView;
+			import views.notifications.NotificationsView;
+			import views.photos.AlbumsView;
+			import views.photos.PostPhotoView;
+			import views.place.PlaceView;
+			import views.user.SingleUserView;
+			
+			public static var isOpeningFromNotificationInStatusBar:Boolean = false;
+			public static var isLoggedIn:Boolean = false;
+			
+			private var _mainMenu:MainMenuCallout=new MainMenuCallout();
+			
+			private var _isMenuOpen:Boolean = false;
+			
+			private var _notificationPollService:NotificationPollService;
+			
+			private function creationCompleteHandler(event:FlexEvent):void
+			{
+				var config:Config = new Config(FlexGlobals.topLevelApplication.persistenceManager);
+				_notificationPollService = new NotificationPollService(config);
+				
+				EventCentral.getInstance().addEventListener(CustomDataEvent.PUSH_SINGLE_USER_VIEW,onPushSingleUserView);
+				EventCentral.getInstance().addEventListener(CustomDataEvent.PUSH_SINGLE_EVENT_VIEW,onPushEventView);
+				EventCentral.getInstance().addEventListener(CustomDataEvent.MAIN_MENU_SELECTION,onMainMenuSelection);
+				EventCentral.getInstance().addEventListener(CustomDataEvent.LOCATION_SELECTED,onLocationSelection);
+				EventCentral.getInstance().addEventListener(CustomDataEvent.PUSH_NEWSFEED,onPushNewsFeed);
+				EventCentral.getInstance().addEventListener(CustomDataEvent.START_NOTIFICATION_POLLING,startNotificationPollService);
+				EventCentral.getInstance().addEventListener(CustomDataEvent.NOTIFICATION_TAPPED_IN_STATUS_BAR,onNotificationTappedInStatusBar);
+				EventCentral.getInstance().addEventListener(CustomDataEvent.NOTIFICATION_POLLING_CONFIGURATION_CHANGE,onNotificationPollingChange);
+			}
+			
+			//Manage Notifications////////////////////////////////////////////////////////////////////////////////////////
+			
+			private function onNotificationPollingChange(event:CustomDataEvent):void{
+				_notificationPollService.reset();
+			}
+			
+			//notification is called from newsfeed after login has been completed to avoid single thread bottle neck on startup
+			
+			private function startNotificationPollService(event:CustomDataEvent):void{
+				_notificationPollService.start();
+			}
+			
+			protected function onNotificationTappedInStatusBar(event:Event):void
+			{
+				//Set static flag used in LoginProcess to determine start view after login
+				FaceBookClient.isOpeningFromNotificationInStatusBar = true;
+				trace("Main isLoggedIn: "+isLoggedIn);
+				if(FaceBookClient.isLoggedIn){
+					navigator.pushView(NotificationsView);
+				}else{
+					navigator.pushView(LoginView);
+				}
+			}
+			
+			//Manage Main Menu//////////////////////////////////////////////////////////////////////////////////////////////
+			
+			private function openMainMenuCallout(event:MouseEvent, owner:UIComponent, value:String):void
+			{
+				trace("FacebookClient openMainMenuCallout");
+				if(_isMenuOpen==false)
+				{
+					_isMenuOpen = true;
+					_mainMenu.addEventListener('close', closeMainMenuCalloutHandler);
+					
+					_mainMenu.setStyle('contentBackgroundAppearance', value);
+					_mainMenu.open(owner);
+				}else{
+					_isMenuOpen = false;
+					_mainMenu.close(false);
+				}
+			}
+			
+			//handles menu selection from views that have to display their own main menu button, not the one set in main(here)
+			private function onMainMenuSelection(event:CustomDataEvent):void{
+				chooseView(event.data);
+			}
+			
+			//handles menu selection from views that can display the default main menu button
+			private function closeMainMenuCalloutHandler(event:PopUpEvent):void{
+				_isMenuOpen = false;
+				if (!event.commit)return;
+				_mainMenu.removeEventListener('close', closeMainMenuCalloutHandler);
+				chooseView(event.data.label);
+			}
+			
+			private function chooseView(selection:String):void{	
+				switch(selection){
+					case MainMenuView.MAIN_MENU_ALBUMS :
+						navigator.pushView(AlbumsView);
+						break;
+					
+					case MainMenuView.MAIN_MENU_CHAT :
+						navigator.pushView(AvailableForChatView)
+						break;
+					
+					case MainMenuView.MAIN_MENU_EVENTS :
+						navigator.pushView(EventsView)
+						break;
+					
+					case MainMenuView.MAIN_MENU_FRIENDS :
+						navigator.pushView(FriendsView)
+						break;
+					
+					case MainMenuView.MAIN_MENU_GROUPS :
+						navigator.pushView(GroupsView)
+						break;
+					
+					case MainMenuView.MAIN_MENU_LOGOUT :
+						onClickLogout();
+						break;
+					
+					case MainMenuView.MAIN_MENU_MESSAGES :
+						navigator.pushView(MessagesView)
+						break;
+					
+					case MainMenuView.MAIN_MENU_NEARBY :
+						navigator.pushView(CheckinView)
+						break;
+					
+					case MainMenuView.MAIN_MENU_NEWS_FEED :
+						navigator.pushView(NewsFeedView)
+						break;
+					
+					case MainMenuView.MAIN_MENU_NOTIFICATIONS :
+						navigator.pushView(NotificationsView);
+						break;
+					
+					case MainMenuView.MAIN_MENU_PROFILE :
+						onClickProfile();
+						break;
+					
+					case MainMenuView.MAIN_MENU_UPLOAD_PHOTO :
+						navigator.pushView(PostPhotoView);
+						break;
+					
+					case MainMenuView.MAIN_MENU_FRIEND_REQUESTS :
+						navigator.pushView(FriendsRequestsView);
+						break;
+					
+					case MainMenuView.MAIN_MENU_MORE_APPS:
+						navigator.pushView(MoreAppsView);
+						break;
+					
+					case MainMenuView.MAIN_MENU_SETTINGS:
+						navigator.pushView(SettingsView);
+						break;
+					
+					case MainMenuView.MAIN_MENU_EXIT_APP :
+						NativeApplication.nativeApplication.exit();
+						break;
+					
+					case MainMenuView.MAIN_MENU_ABOUT:
+						navigator.pushView(AboutView);
+					
+				}
+				
+			}
+			
+			private function onClickLogout():void
+			{
+				var dataObject:Object=new Object();
+				dataObject.viewState="logout";
+				this.navigator.pushView(LoginView, dataObject);
+			}
+			
+			private function onClickProfile():void
+			{
+				var dataObject:Object=new Object();
+				dataObject.id=FacebookMobile.getSession().uid;
+				dataObject.name=FacebookMobile.getSession().user.name;
+				navigator.pushView(SingleUserView, dataObject);
+			}
+			
+			private function onPushSingleUserView(event:CustomDataEvent):void
+			{
+				navigator.pushView(SingleUserView,event.dataObject);		
+			}
+			
+			private function onPushEventView(event:CustomDataEvent):void
+			{
+				navigator.pushView(SingleEventView,event.dataObject);
+			}
+			
+			private function onLocationSelection(event:CustomDataEvent):void
+			{
+				navigator.pushView(PlaceView, event.dataObject);
+			}
+			
+			private function onPushNewsFeed(event:Event):void
+			{
+				navigator.pushView(NewsFeedView);
+			}
+		
+		]]>
+	</fx:Script>
+	
+</s:ViewNavigatorApplication>

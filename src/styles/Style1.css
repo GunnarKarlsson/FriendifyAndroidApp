@@ -1,0 +1,120 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+
+/*
+s|SpinnerListItemRenderer {
+	paddingTop: 20;
+	paddingBottom: 20;
+	paddingLeft: 20;
+	paddingRight: 20;
+}
+*/
+
+s|Callout
+{
+	backgroundColor: #000000;
+}
+
+.callOutBackGround
+{
+	color: #000000;
+}
+
+.newsFeedHeader
+{
+	color:#444444;
+	fontSize: 18;
+	fontWeight: bold;
+}
+
+s|View
+{	
+	/*backgroundColor: #777777;*/
+	skinClass: ClassReference("skins.ViewBackgroundSkin");
+}
+
+s|Button
+{
+	skinClass: ClassReference("skins.SquareButtonSkin");
+	fontSize:24;
+	color: #ab1a65;
+}
+
+s|ActionBar
+{
+	skinClass: ClassReference("skins.SolidColorActionBarSkin");
+}
+
+s|ActionBar #titleDisplay
+{
+	color: #f44b9e;
+	fontSize: 20;
+}
+
+.glowBox
+{
+	chromeColor: #ab1a65;
+	color: #ab1a65;
+	testColor: #555555;
+	skinClass: ClassReference("skins.SolidColorActionBarSkin");
+}
+
+.iconItemRendererFont
+{
+	color: #dddddd;	
+}
+/*
+s|ActionBar
+{
+	defaultButtonAppearance:beveled;
+}
+*/
+
+.imageBackground{
+	backgroundColor: #999999;
+}
+
+
+.headerText
+{
+	fontSize: 24;
+	color: #ffffff;
+}
+
+.headerTextBlack
+{
+	fontSize: 24;
+	color: #000000;
+}
+
+.bodyTextWhite
+{
+	fontSize: 18;
+	color: #ffffff;
+}
+
+.bodyTextBlack
+{
+	fontSize: 18;
+	color: #000000;
+	
+}
+
+.bodyTextGrey
+{
+	fontSize: 18;
+	color: #999999;
+}
+
+.timeText
+{
+	fontSize: 15;
+	color: #999999;
+}
+
+.actionsText
+{
+	fontSize: 15;
+	color: #999999;
+}

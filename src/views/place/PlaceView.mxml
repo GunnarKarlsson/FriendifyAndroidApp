@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				 xmlns:s="library://ns.adobe.com/flex/spark" xmlns:components="spark.components.*" actionBarVisible="false">
+	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		
+		.tabbedStyle #tabBar
+		{
+			chromeColor: #000000;
+			color: #ffffff;
+		}
+	</fx:Style>
+	
+	<s:TabbedViewNavigator width="100%" height="100%" styleName="tabbedStyle">
+		
+		<s:ViewNavigator label="Place Wall" width="100%" height="100%" 
+						 firstView="views.place.PlaceWallView" firstViewData="{data}"
+						 icon="@Embed('assets/images/icons/metalLocationSmall001.png')"/>
+		
+		<s:ViewNavigator label="Map" width="100%" height="100%" 
+						 firstView="views.place.PlaceMapView" firstViewData="{data}"
+						 icon="@Embed('assets/images/icons/metalMapSmall001.png')"/>
+		<s:ViewNavigator label="Photos" width="100%" height="100%" 
+						 firstView="views.user.SingleUserAlbumsView" firstViewData="{data}"
+						 icon="@Embed('assets/images/icons/metalPhotosSmall001.png')"/>
+		
+	</s:TabbedViewNavigator>
+	
+</components:View>

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		viewActivate="onViewActivate()" xmlns:customComponents="customComponents.*">
+	<fx:Script>
+		<![CDATA[
+			import VOs.ChatMessageVO;
+			
+			import com.facebook.graph.FacebookMobile;
+			import com.squidzoo.RandomUtils;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import org.igniterealtime.xiff.core.EscapedJID;
+			import org.igniterealtime.xiff.core.XMPPTLSConnection;
+			import org.igniterealtime.xiff.data.Message;
+			import org.igniterealtime.xiff.events.MessageEvent;
+			
+			private var _connection:XMPPTLSConnection;
+			private var _messageInput:String = "";
+			
+			private var _chattingWith:EscapedJID = new EscapedJID("-100003107621287@chat.facebook.com");
+			
+			[Bindable]private var _chatMessages:ArrayCollection = new ArrayCollection();
+			
+			private function onViewActivate():void
+			{
+				// TODO Auto-generated method stub
+				//_chattingWith = data.id as EscapedJID;
+				title = "Chatting with "+data.name;
+				_connection = navigator.context.connection;
+				_connection.addEventListener( org.igniterealtime.xiff.events.MessageEvent.MESSAGE, onMessage );
+			}
+			
+			private function onViewDeactivate():void{
+				_connection.removeEventListener( org.igniterealtime.xiff.events.MessageEvent.MESSAGE, onMessage );
+			}
+			
+			private function onClickSend():void{
+				sendMessage();
+			}
+			
+			private function onMessage(event:org.igniterealtime.xiff.events.MessageEvent):void
+			{
+				//trace("onMessage. " + event.toString());
+				if(event.data.body!=null){
+					var vo:ChatMessageVO = new ChatMessageVO(event.data.from.toString());
+					var date:Date = new Date();
+					vo.time = date.getHours() + ":" + date.getMinutes();
+					vo.body = event.data.body;
+					_chatMessages.addItemAt(vo,0);
+				}
+			}
+			
+			private function sendMessage():void{	
+				var messageText:String = _messageInput;
+				_messageInput = "";
+				
+				var messageID:String = RandomUtils.generateRandomString(10);
+				var msg:Message = new Message(_chattingWith, messageID, messageText, null, Message.TYPE_CHAT);
+				
+				//trace("msg.body: "+msg.body);
+				_connection.send(msg);
+				
+				var vo:ChatMessageVO = new ChatMessageVO(FacebookMobile.getSession().uid,false);
+				var date:Date = new Date();
+				vo.time = date.getHours() + ":" + date.getMinutes();
+				vo.body = messageText;
+				_chatMessages.addItemAt(vo,0);
+			}
+			
+			private function onTextInputChange(event:Event):void{
+				_messageInput = event.currentTarget.text;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:VGroup width="100%" height="100%" gap="0">
+		<s:VGroup paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" width="100%">			
+			<customComponents:ClearableTextInput id="textInput" prompt="write message"
+										   change="onTextInputChange(event)" 
+										   height="80" width="100%"
+										   skinClass="skins.ClearableTextInputSkin"/>
+		</s:VGroup>
+	<s:List id="messageList"
+			dataProvider="{_chatMessages}"
+			itemRenderer="itemrenderers.ChatMessageItemRenderer"
+			width="100%" height="100%"
+			contentBackgroundAlpha="0">
+		<s:layout>
+			<s:VerticalLayout/>
+		</s:layout>
+	</s:List>
+	
+		<s:VGroup paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" width="100%">			
+			<s:Button label="send message" id="sendButton" height="80" click="onClickSend()" width="100%"/>
+		</s:VGroup>
+	</s:VGroup>
+	
+</s:View>

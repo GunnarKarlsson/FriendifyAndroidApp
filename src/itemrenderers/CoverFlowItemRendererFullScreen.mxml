@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" width="{_fullScreenWidth}" height="{_fullScreenHeight}">
+
+<fx:Script>
+	<![CDATA[
+		import helpers.ImageResizeUtils;
+		
+		import mx.core.FlexGlobals;
+		[Bindable]private var _fullScreenWidth:int = FlexGlobals.topLevelApplication.stage.stageWidth;
+		[Bindable]private var _fullScreenHeight:int = FlexGlobals.topLevelApplication.stage.stageHeight;
+		
+		override public function set data(value:Object):void {				
+			
+			var bitmap:Bitmap = value.image;
+			var scaleFactor:Number;
+			if(FlexGlobals.topLevelApplication.stage.stageWidth > FlexGlobals.topLevelApplication.stage.stageHeight){
+				scaleFactor = FlexGlobals.topLevelApplication.stage.stageHeight / bitmap.height;						
+			}else{
+				scaleFactor = FlexGlobals.topLevelApplication.stage.stageWidth / bitmap.width;
+			}
+			
+			image.source = bitmap;
+			image.scaleX = scaleFactor;
+			image.scaleY = scaleFactor;
+		}
+		
+		public function scalePhotoToTargetHeight(image:Bitmap, targetContainerHeight:int):Bitmap
+		{
+			var scaleFactor:Number = targetContainerHeight / image.height;
+			var targetContainerWidth:Number = scaleFactor * image.width;
+			
+			var scaleParams:Matrix = new Matrix(); 
+			scaleParams.scale(scaleFactor,scaleFactor); 
+			//test
+			var newBmd:BitmapData = new BitmapData(targetContainerWidth, targetContainerHeight,true,0xffffff); 
+			//draw new bitmapdata with matrix	
+			newBmd.draw(image.bitmapData, scaleParams); 
+			//create final bitmap with new bitmapdata 
+			var newBmp:Bitmap = new Bitmap(newBmd); 
+			//set smooting to true 
+			newBmp.smoothing = true; 
+			
+			return newBmp; 
+		}
+	]]>
+</fx:Script>
+
+	<s:VGroup verticalCenter="0" horizontalCenter="0">
+		<s:Image id="image"/>
+	</s:VGroup>
+	
+</s:ItemRenderer>

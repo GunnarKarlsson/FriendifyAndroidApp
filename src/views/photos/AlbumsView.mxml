@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		title="Albums"
+		viewActivate="onViewActivate()"
+		viewDeactivate="onViewDeactivate()"
+		currentState="loading"
+		destructionPolicy="never"
+		xmlns:loadingAndErrorMessage="customComponents.loadingAndErrorMessage.*">
+
+	<s:actionContent>
+		<s:Button id="newAlbumButton"
+				  icon="@Embed('assets/images/icons/metalNewAlbum001.png')"
+				  click="openCallout(event, newAlbumButton, spark.components.ContentBackgroundAppearance.NONE)"/>
+	</s:actionContent>
+
+	<s:states>
+		<s:State name="loading"/>
+		<s:State name="complete"/>
+		<s:State name="error"/>
+	</s:states>
+
+
+	<fx:Script>
+		<![CDATA[
+			import com.facebook.graph.FacebookMobile;
+			import com.squidzoo.eventSystem.EventCentral;
+			import com.squidzoo.eventSystem.events.CustomDataEvent;
+			import com.squidzoo.eventSystem.events.CustomEvent;
+
+			import customComponents.callouts.MainMenuCallout;
+			import customComponents.callouts.NewAlbumCallout;
+
+			import mx.collections.ArrayCollection;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+
+			import services.FBService;
+
+			import spark.events.PopUpEvent;
+
+			private var _service:FBService=new FBService();
+
+			[Bindable]
+			private var _facebookPhotoAlbums:ArrayCollection=new ArrayCollection();
+			[Bindable]
+			private var _facebookPhotos:ArrayCollection=new ArrayCollection();
+
+			public var _newAlbumCallout:NewAlbumCallout=new NewAlbumCallout();
+
+			private var _mainmenuCallout:MainMenuCallout=new MainMenuCallout();
+
+			//handle main menu callout
+			private function openMainMenuCallout(event:MouseEvent, owner:UIComponent, value:String):void
+			{
+				_mainmenuCallout.addEventListener('close', closeMainMenuCalloutHandler);
+				_mainmenuCallout.setStyle('contentBackgroundAppearance', value);
+				_mainmenuCallout.open(owner);
+			}
+
+			private function closeMainMenuCalloutHandler(event:PopUpEvent):void
+			{
+				if (!event.commit)
+					return;
+				_mainmenuCallout.removeEventListener('close', closeMainMenuCalloutHandler);
+				EventCentral.getInstance().dispatchEvent(new CustomDataEvent(CustomDataEvent.MAIN_MENU_BUTTON_CLICKED, event.data.label));
+			}
+
+			//handle album callout
+			private function openCallout(event:MouseEvent, owner:UIComponent, value:String):void
+			{
+				_newAlbumCallout.addEventListener('close', closeHandler);
+				_newAlbumCallout.setStyle('contentBackgroundAppearance', value);
+				_newAlbumCallout.open(owner);
+			}
+
+			private function closeHandler(event:PopUpEvent):void
+			{
+				_newAlbumCallout.removeEventListener('close', closeHandler);
+
+				if (event.data != null)
+				{
+					var params:Object=new Object();
+					params.message=event.data.name;
+					params.name=event.data.message;
+					FacebookMobile.api("/me/albums", handleAlbumCreation, params, "POST");
+				}
+			}
+
+			private function handleAlbumCreation(success:Object, fail:Object):void
+			{
+				if (success)
+				{
+					trace("album created");
+					refreshList();
+				}
+				else
+				{
+					trace("error creating album");
+				}
+			}
+
+			private function refreshList():void
+			{
+				getPhotoAlbums();
+			}
+
+			private function onViewActivate():void
+			{
+				getPhotoAlbums();
+			}
+
+			private function onViewDeactivate():void
+			{
+				if (_service.hasEventListener(FBService.GET_ALBUMS_SUCCESS))
+				{
+					_service.removeEventListener(FBService.GET_ALBUMS_SUCCESS, onGetAlbumsSuccess);
+				}
+				if (_service.hasEventListener(FBService.GET_ALBUMS_ERROR))
+				{
+					_service.removeEventListener(FBService.GET_ALBUMS_ERROR, onGetAlbumsError);
+				}
+				if (list && list.hasEventListener(MouseEvent.CLICK))
+				{
+					list.removeEventListener(MouseEvent.CLICK, onClickList);
+				}
+				if(_newAlbumCallout){
+					_newAlbumCallout.cleanUp();
+				}
+
+			}
+
+			private function getPhotoAlbums():void
+			{
+				currentState="loading";
+				_service.addEventListener(FBService.GET_ALBUMS_SUCCESS, onGetAlbumsSuccess);
+				_service.addEventListener(FBService.GET_ALBUMS_ERROR, onGetAlbumsError);
+				_service.getPhotoAlbums();
+			}
+
+			private function onGetAlbumsSuccess(event:Event):void
+			{
+				_facebookPhotoAlbums.removeAll();
+
+				_service.removeEventListener(FBService.GET_ALBUMS_SUCCESS, onGetAlbumsSuccess);
+				_service.removeEventListener(FBService.GET_ALBUMS_ERROR, onGetAlbumsError);
+				currentState="complete";
+				_facebookPhotoAlbums.source=_service.photoAlbums;
+			}
+
+			private function onGetAlbumsError(event:Event):void
+			{
+				_service.removeEventListener(FBService.GET_ALBUMS_SUCCESS, onGetAlbumsSuccess);
+				_service.removeEventListener(FBService.GET_ALBUMS_ERROR, onGetAlbumsError);
+				currentState="error";
+			}
+
+			private function onClickList():void
+			{
+				navigator.pushView(SingleAlbumView, list.selectedItem);
+			}
+		]]>
+	</fx:Script>
+
+	<!--loading,error state-->
+	<s:VGroup width="100%"
+			  height="100%"
+			  includeIn="loading,error"
+			  verticalCenter="0"
+			  horizontalCenter="0"
+			  verticalAlign="middle"
+			  horizontalAlign="center">
+		<loadingAndErrorMessage:LoadingAndErrorMessageComponent id="loadingMessage"
+																message="Loading content..."
+																includeIn="loading"/>
+		<loadingAndErrorMessage:LoadingAndErrorMessageComponent id="errorMessage"
+																message="Error loading content..."
+																includeIn="error"/>
+	</s:VGroup>
+
+	<s:VGroup width="100%"
+			  height="100%"
+			  includeIn="complete">
+
+		<s:List id="list"
+				width="100%"
+				height="100%"
+				dataProvider="{_facebookPhotoAlbums}"
+				click="onClickList()"
+				minHeight="400"
+				contentBackgroundAlpha="0"
+				itemRenderer="itemrenderers.album.AlbumItemRenderer"
+				useVirtualLayout="false">
+		</s:List>
+
+	</s:VGroup>
+
+</s:View>

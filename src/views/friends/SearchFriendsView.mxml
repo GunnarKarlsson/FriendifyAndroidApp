@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		title="Search Friends"
+		width="100%"
+		height="100%"
+		xmlns:customComponents="customComponents.*">
+
+	<fx:Script>
+		<![CDATA[
+			import com.squidzoo.eventSystem.EventCentral;
+			import com.squidzoo.eventSystem.events.CustomDataEvent;
+			[Bindable]
+			public var _searchFriendsOnly:Boolean;
+
+			private var scope:String="friends";
+
+			private function onScopeChange(event:Event):void
+			{
+				trace(event.target.selected);
+				if (event.target.selected == false)
+				{
+					scope="friends";
+				}
+				else
+				{
+					scope="everyone";
+				}
+
+				EventCentral.getInstance().dispatchEvent(new CustomDataEvent(CustomDataEvent.NEW_FRIENDS_SEARCH_SCOPE, scope));
+			}
+
+			private function onNameChange(event:Event):void
+			{
+				EventCentral.getInstance().dispatchEvent(new CustomDataEvent(CustomDataEvent.NEW_FRIENDS_SEARCH_NAME, pName.text));
+			}
+		]]>
+	</fx:Script>
+
+
+	<s:VGroup width="100%"
+			  height="100%"
+			  paddingBottom="5"
+			  paddingLeft="5"
+			  paddingRight="5"
+			  paddingTop="10">
+		<s:Label text="Name:"
+				 styleName="headerText"/>
+		<customComponents:ClearableTextInput prompt="type name"
+									   id="pName"
+									   width="100%"
+									   change="onNameChange(event)"
+									   height="60"
+									   skinClass="skins.ClearableTextInputSkin"/>
+		<s:ToggleSwitch id="switch2"
+						skinClass="skins.SearchFriendsScopeToggleSwitchSkin"
+						change="onScopeChange(event)"/>
+	</s:VGroup>
+</s:View>

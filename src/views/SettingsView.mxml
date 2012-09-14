@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		xmlns:components="spark.components.*"
+		title="SettingsView"
+		creationComplete="onCreationComplete()"
+		xmlns:mx="library://ns.adobe.com/flex/mx"
+		destructionPolicy="never">
+
+	<fx:Declarations>
+		<s:RadioButtonGroup id="notificationFrequencyRadioButtons"
+							itemClick="onClickNotificationFrequency(event)"/>
+	</fx:Declarations>
+
+	<fx:Script>
+		<![CDATA[
+			import com.squidzoo.eventSystem.EventCentral;
+			import com.squidzoo.eventSystem.events.CustomDataEvent;
+			
+			import flashx.textLayout.elements.Configuration;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.ItemClickEvent;
+			
+			import services.Config;
+			
+			import spark.managers.PersistenceManager;
+
+			private var _config:Config;
+
+			[Bindable]
+			private var _neverLabel:String;
+			[Bindable]
+			private var _oneMinuteLabel:String;
+			[Bindable]
+			private var _fifteenMinutesLabel:String;
+			[Bindable]
+			private var _thirtyMinutesLabel:String;
+			[Bindable]
+			private var _oneHourLabel:String;
+
+			private function onCreationComplete():void
+			{
+				_config=new Config(FlexGlobals.topLevelApplication.persistenceManager);
+				setNotificationFrequencyLabels();
+				loadConfiguration();
+			}
+
+			private function setNotificationFrequencyLabels():void
+			{
+				_neverLabel=Config.POLL_FREQUENCY_NEVER;
+				_oneMinuteLabel=Config.POLL_FREQUENCY_ONE_MINUTE;
+				_fifteenMinutesLabel=Config.POLL_FREQUENCY_FIFTEEN_MINUTES;
+				_thirtyMinutesLabel=Config.POLL_FREQUENCY_THIRTY_MINUTES;
+				_oneHourLabel=Config.POLL_FREQUENCY_ONE_HOUR;
+			}
+
+			protected function loadConfiguration():void
+			{
+				if (_config.hasSavedData())
+				{
+
+					if (_config.getProperty(Config.POLL_FREQUENCY) != null)
+					{
+						notificationFrequencyRadioButtons.selectedValue=_config.getProperty(Config.POLL_FREQUENCY).toString();
+						trace("t1");
+					}
+					else
+					{
+						_config.setProperty(Config.POLL_FREQUENCY,Config.POLL_FREQUENCY_THIRTY_MINUTES);
+						notificationFrequencyRadioButtons.getRadioButtonAt(0).selected = true;
+						trace("t2");
+					}
+					
+					trace("settings: radioButtonselection: "+ notificationFrequencyRadioButtons.selectedValue);
+
+				}
+			}
+
+			private function onClickNotificationFrequency(event:ItemClickEvent):void
+			{
+				trace("selectedValue: " + notificationFrequencyRadioButtons.selection.id);
+
+				_config.clearPollFrequency();
+
+				switch (notificationFrequencyRadioButtons.selection.label)
+				{
+					case Config.POLL_FREQUENCY_NEVER:
+						_config.setProperty(Config.POLL_FREQUENCY, Config.POLL_FREQUENCY_NEVER);
+					case Config.POLL_FREQUENCY:
+						_config.setProperty(Config.POLL_FREQUENCY, Config.POLL_FREQUENCY_NEVER);
+						break;
+					case Config.POLL_FREQUENCY_ONE_MINUTE:
+						_config.setProperty(Config.POLL_FREQUENCY, Config.POLL_FREQUENCY_ONE_MINUTE);
+						break;
+					case Config.POLL_FREQUENCY_FIFTEEN_MINUTES:
+						_config.setProperty(Config.POLL_FREQUENCY, Config.POLL_FREQUENCY_FIFTEEN_MINUTES);
+						break;
+					case Config.POLL_FREQUENCY_THIRTY_MINUTES:
+						_config.setProperty(Config.POLL_FREQUENCY, Config.POLL_FREQUENCY_THIRTY_MINUTES);
+						break;
+					case Config.POLL_FREQUENCY_ONE_HOUR:
+						_config.setProperty(Config.POLL_FREQUENCY, Config.POLL_FREQUENCY_ONE_HOUR);
+						break;
+				}
+
+				EventCentral.getInstance().dispatchEvent(new CustomDataEvent(CustomDataEvent.NOTIFICATION_POLLING_CONFIGURATION_CHANGE, null));
+			}
+		]]>
+	</fx:Script>
+	<s:Rect width="100%"
+			height="100%"
+			alpha="0.9">
+		<s:fill>
+			<s:SolidColor color="#000000"/>
+		</s:fill>
+	</s:Rect>
+
+	<s:Scroller width="100%"
+				height="100%"
+				verticalScrollPolicy="on"
+				horizontalScrollPolicy="off">
+
+		<s:VGroup id="settingsGroup"
+				  width="100%"
+				  height="100%"
+				  color="#ffffff">
+			<s:VGroup width="100%"
+					  height="100%"
+					  paddingBottom="20"
+					  paddingLeft="20"
+					  paddingRight="20"
+					  paddingTop="20">
+				<s:RichEditableText text="Set Notification Frequency"/>
+				<s:RichEditableText width="100%"
+									editable="false"
+									multiline="true"
+									selectable="false"
+									styleName="bodyTextWhite"
+									text="A message will appear in your Status Bar when unread notifications are available. Friendify must be running for messages to appear in Status Bar. Note that frequent notification polls increase battery consumption."/>
+				<s:RadioButton id="never"
+							   label="{_neverLabel}"
+							   group="{notificationFrequencyRadioButtons}"/>
+				<s:RadioButton id="oneMinute"
+							   label="{_oneMinuteLabel}"
+							   group="{notificationFrequencyRadioButtons}"/>
+				<s:RadioButton id="fifteenMinutes"
+							   label="{_fifteenMinutesLabel}"
+							   group="{notificationFrequencyRadioButtons}"/>
+				<s:RadioButton id="thirtyMinutes"
+							   label="{_thirtyMinutesLabel} (Recommended)"
+							   group="{notificationFrequencyRadioButtons}"/>
+				<s:RadioButton id="oneHour"
+							   label="{_oneHourLabel}"
+							   group="{notificationFrequencyRadioButtons}"/>
+			</s:VGroup>
+
+		</s:VGroup>
+	</s:Scroller>
+
+</s:View>

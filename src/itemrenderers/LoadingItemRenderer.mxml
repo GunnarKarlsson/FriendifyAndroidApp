@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" width="100%" height="100%" maxHeight="80" autoDrawBackground="false" contentBackgroundAlpha="0" xmlns:styles="styles.*" xmlns:loadingAndErrorMessage="customComponents.loadingAndErrorMessage.*">
+	
+	<styles:GraphicsLib id="graphicsLib"/>
+	
+	<fx:Script>
+		<![CDATA[
+			
+			override public function set data(value:Object):void {
+				if (value == null || (data && data.id == value.id)) { return; }
+				
+			}
+		]]>
+	</fx:Script>
+	
+	<s:HGroup width="100%" height="100%" maxHeight="80" paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10" horizontalAlign="center" verticalAlign="middle">
+			<s:BusyIndicator scaleX="1" scaleY="1" symbolColor="{graphicsLib.getPullDownListLoaderColor()}"/>
+		<loadingAndErrorMessage:LoadingAndErrorMessageComponent id="loadingMessage"
+																message="Loading..."/>
+	</s:HGroup>
+	
+</s:ItemRenderer>

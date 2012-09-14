@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark">
+	<!-- host component -->
+	<fx:Metadata>
+		[HostComponent("spark.components.SkinnableContainer")]
+	</fx:Metadata>
+	
+	<!-- states -->
+	<s:states>
+		<s:State name="disabled" />
+		<s:State name="normal" />
+	</s:states>
+	
+	<s:Path data = " 	M 50 0
+						L 70 30
+						L 50 30
+						L 50 0">
+		<s:fill>
+			<s:SolidColor color="#ffaace"/>
+		</s:fill>
+	</s:Path>
+
+	<s:Rect width="100%" height="40" y="30">
+		<s:fill>
+			<s:SolidColor color="#ffaace"/>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Group id="contentGroup" y="30"/>
+	
+
+</s:Skin>

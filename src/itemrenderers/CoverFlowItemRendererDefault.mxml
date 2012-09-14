@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				clipAndEnableScrolling="false"
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				xmlns:local="*"
+				width="100%"
+				height="100%"
+				autoDrawBackground="false"
+				contentBackgroundAlpha="0"
+				>
+	<fx:Script>
+		<![CDATA[
+			import mx.core.FlexGlobals;
+
+			[Bindable]private var _maxHeight:int = FlexGlobals.topLevelApplication.stage.stageHeight - 40;
+			[Bindable]private var _maxWidth:int = FlexGlobals.topLevelApplication.stage.stageWidth - 100;
+			
+			[Bindable]public var _forCompiler:CoverFlowItemRendererDefault;
+			
+			override public function set data(value:Object):void
+			{
+
+				if (value.hasOwnProperty("image"))
+				{
+					img.source=value.image;
+				}
+
+				if (value.hasOwnProperty("sourceXtraLarge"))
+				{
+					img.source=value.sourceXtraLarge;
+				}
+			}
+		]]>
+	</fx:Script>
+
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	<s:Image id="img" maxHeight="{_maxHeight}" maxWidth="{_maxWidth}"/>
+
+</s:ItemRenderer>

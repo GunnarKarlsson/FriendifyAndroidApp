@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components:Callout xmlns:fx="http://ns.adobe.com/mxml/2009"
+					xmlns:s="library://ns.adobe.com/flex/spark"
+					xmlns:components="spark.components.*"
+					width="100%"
+					maxWidth="400"
+					height="100%"
+					creationComplete="creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.squidzoo.eventSystem.EventCentral;
+			import com.squidzoo.eventSystem.events.CustomDataEvent;
+			
+			import mx.events.FlexEvent;
+			
+			private var message:String = "";
+			
+			private function onClickCancel():void
+			{
+				
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				EventCentral.getInstance().addEventListener(CustomDataEvent.NEW_USER_COMMENT,onUserComment);
+			}
+			
+			protected function onUserComment(event:CustomDataEvent):void
+			{
+				// TODO Auto-generated method stub
+				message = event.data;
+			}
+			
+			private function onClickPost():void
+			{
+				EventCentral.getInstance().removeEventListener(CustomDataEvent.NEW_USER_COMMENT,onUserComment);
+				if (message != "")
+				{
+					var params:Object=new Object();
+					params.message=message;
+					this.close(true, params);
+				}
+				else
+				{
+					this.close(false);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+
+	<s:ViewNavigator id="viewNav"
+					 width="100%"
+					 height="100%"
+					 firstView="views.comments.PostCommentView">
+
+		<s:navigationContent>
+			<s:Button id="cancelButton"
+					  label="Cancel"
+					  emphasized="true"
+					  click="close(false)"/>
+		</s:navigationContent>
+		<s:actionContent>
+			<s:Button label="Post" click="onClickPost()"/>
+		</s:actionContent>
+
+	</s:ViewNavigator>
+
+</components:Callout>

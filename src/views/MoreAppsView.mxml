@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		xmlns:components="spark.components.*"
+		title="More Apps"
+		creationComplete="onCreationComplete()"
+		xmlns:styles="styles.*">
+
+	<fx:Declarations>
+		<styles:GraphicsLib id="graphicsLib"/>
+	</fx:Declarations>
+
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			[Bindable]
+			private var _dp:ArrayCollection=new ArrayCollection();
+
+			public static const FRIENDIFY_GLOSSY_LEOPARD:String="Friendify Glossy Leopard";
+			public static const FRIENDIFY_ZEBRA:String="Friendify Zebra";
+			public static const FRIENDIFY_GIRLY_DOTS:String="Friendify Girly Dots";
+			public static const FRIENDIFY_BLACK_AND_PINK:String="Friendify Black and Pink";
+			public static const FRIENDIFY_PINK:String="Friendify Pink";
+			public static const FRIENDIFY_DIAMONDS:String="Friendify Diamonds";
+			public static const FRIENDIFY_CNY:String="Friendify Year of the Dragon";
+			public static const FRIENDIFY_KIMONO:String="Friendify Kimono";
+			public static const FRIENDIFY_GIRLY_SKULL:String="Friendify Girly Skull";
+			public static const FRIENDIFY_METAL:String="Friendify Metal";
+			public static const FRIENDIFY_BLACK:String="Friendify Black";
+			public static const FRIENDIFY_HEARTS:String="Friendify Hearts";
+
+			private function onCreationComplete():void
+			{
+				createMenuItems();
+			}
+
+			private function createMenuItems():void
+			{
+				var fgs:Object=new Object();
+				fgs.label=MoreAppsView.FRIENDIFY_GIRLY_SKULL;
+				fgs.icon="assets/images/icons/promo/promoGirlySkull.png"
+				_dp.addItem(fgs);
+				
+				var fgl:Object=new Object();
+				fgl.label=MoreAppsView.FRIENDIFY_GLOSSY_LEOPARD;
+				fgl.icon="assets/images/icons/promo/promoLeopard.png"
+				_dp.addItem(fgl);
+
+				var fz:Object=new Object();
+				fz.label=MoreAppsView.FRIENDIFY_ZEBRA;
+				fz.icon="assets/images/icons/promo/promoZebra.png";
+				_dp.addItem(fz);
+
+				var fgd:Object=new Object();
+				fgd.label=MoreAppsView.FRIENDIFY_GIRLY_DOTS;
+				fgd.icon="assets/images/icons/promo/promotDots.png";
+				_dp.addItem(fgd);
+
+				var fbp:Object=new Object();
+				fbp.label=MoreAppsView.FRIENDIFY_BLACK_AND_PINK;
+				fbp.icon="assets/images/icons/promo/promoBlackAndPink.png";
+				_dp.addItem(fbp);
+
+				var fdiam:Object=new Object();
+				fdiam.label=MoreAppsView.FRIENDIFY_DIAMONDS;
+				fdiam.icon="assets/images/icons/promo/promoDiamonds.png";
+				_dp.addItem(fdiam);
+				
+				var fhearts:Object = new Object();
+				fhearts.label=MoreAppsView.FRIENDIFY_HEARTS;
+				fhearts.icon="assets/images/icons/promo/promoHearts.png";
+				_dp.addItem(fhearts);
+
+				var fcny:Object=new Object();
+				fcny.label=MoreAppsView.FRIENDIFY_CNY;
+				fcny.icon="assets/images/icons/promo/promoCNY.png";
+				_dp.addItem(fcny);
+
+				var fkim:Object=new Object();
+				fkim.label=MoreAppsView.FRIENDIFY_KIMONO;
+				fkim.icon="assets/images/icons/promo/promoKimono.png";
+				_dp.addItem(fkim);
+				
+				var fmet:Object = new Object();
+				fmet.label=MoreAppsView.FRIENDIFY_METAL;
+				fmet.icon="assets/images/icons/promo/promoMetal.png";
+				_dp.addItem(fmet);
+				
+				//exclude the app itself
+				/*
+				var fbl:Object = new Object();
+				fbl.label=MoreAppsView.FRIENDIFY_BLACK;
+				fbl.icon="assets/images/icons/promo/promoBlack.png";
+				_dp.addItem(fbl);
+				*/
+			
+			}
+
+			private function onListClick():void
+			{
+
+				var urlString:String="https://market.android.com/details?id=air.com.squidzoo.";
+
+				if(list.selectedItem.label == MoreAppsView.FRIENDIFY_GIRLY_SKULL)
+				{
+					urlString +="friendifyGirlySkull";
+				}
+				if (list.selectedItem.label == MoreAppsView.FRIENDIFY_GLOSSY_LEOPARD)
+				{
+					urlString+="friendifyLeopard";
+				}
+				else if(list.selectedItem.label == MoreAppsView.FRIENDIFY_BLACK)
+				{
+					urlString +="friendifySleekBlack";
+				}
+				else if(list.selectedItem.label == MoreAppsView.FRIENDIFY_METAL)
+				{
+					urlString +="friendifyMetal";
+				}
+				else if (list.selectedItem.label == MoreAppsView.FRIENDIFY_BLACK_AND_PINK)
+				{
+					urlString+="friendifySleekBlackAndPink";
+				}
+				else if (list.selectedItem.label == MoreAppsView.FRIENDIFY_PINK)
+				{
+					urlString += "friendifyPink";
+				}
+				else if (list.selectedItem.label == MoreAppsView.FRIENDIFY_GIRLY_DOTS)
+				{
+					urlString+="friendifyDots";
+				}
+				else if(list.selectedItem.label == MoreAppsView.FRIENDIFY_HEARTS)
+				{
+					urlString +="friendifyHearts";
+				}
+				else if (list.selectedItem.label == MoreAppsView.FRIENDIFY_CNY)
+				{
+					urlString+="friendifyChineseNewYear";
+				}
+				else if (list.selectedItem.label == MoreAppsView.FRIENDIFY_DIAMONDS)
+				{
+					urlString+="friendifyDiamonds";
+				}
+			
+				else if (list.selectedItem.label == MoreAppsView.FRIENDIFY_KIMONO)
+				{
+					urlString+="friendifyKimono";
+				}
+			
+				else if(list.selectedItem.label == MoreAppsView.FRIENDIFY_ZEBRA)
+				{
+					urlString +="friendifyZebra";
+				}
+			
+			
+				
+				trace(urlString);
+
+				var url:URLRequest=new URLRequest(urlString);
+				navigateToURL(url, '_blank');
+			}
+		]]>
+	</fx:Script>
+
+	<s:VGroup width="100%"
+			  height="100%"
+			  gap="0"
+			  top="0">
+		<s:List id="list"
+				dataProvider="{_dp}"
+				width="100%"
+				height="100%"
+				click="onListClick()"
+				alternatingItemColors="{[0x111111,0x111111]}"
+				selectionColor="0x555555"
+				contentBackgroundAlpha="0"
+				useVirtualLayout="false">
+			<s:itemRenderer>
+				<fx:Component>
+					<s:IconItemRenderer iconFunction="myIconFunction"
+										labelFunction="myLabelFunction"
+										color="0xffffff"
+										iconWidth="180"
+										iconHeight="120"
+										decorator="assets/images/icons/arrowRight.png">
+						<fx:Script>
+							<![CDATA[
+								import mx.core.FlexGlobals;
+
+								[Bindable]
+								private var _screenWidth:int=FlexGlobals.topLevelApplication.stage.stageWidth - 10;
+
+								public function myLabelFunction(item:Object):String
+								{
+									return item.label;
+								}
+
+								public function myIconFunction(item:Object):String
+								{
+									if (item.hasOwnProperty("icon"))
+									{
+										return item.icon;
+									}
+									else
+									{
+										return null;
+									}
+								}
+							]]>
+						</fx:Script>
+					</s:IconItemRenderer>
+				</fx:Component>
+			</s:itemRenderer>
+		</s:List>
+	</s:VGroup>
+</s:View>

@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		title="Main Menu"
+		creationComplete="creationComplete()"
+		destructionPolicy="never"
+		backgroundColor="0x000000"
+		skinClass="skins.SingleColorBackgroundSkin"
+		height="100%"
+		width="100%"
+		actionBarVisible="false"
+		xmlns:styles="styles.*">
+
+	<styles:GraphicsLib id="graphicsLib"/>
+
+	<fx:Script>
+		<![CDATA[
+			import com.squidzoo.eventSystem.EventCentral;
+			import com.squidzoo.eventSystem.events.CustomDataEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+
+			[Bindable]
+			private var _dp:ArrayCollection=new ArrayCollection();
+
+			public static const MAIN_MENU_ALBUMS:String="Albums";
+			public static const MAIN_MENU_NEWS_FEED:String="News Feed";
+			public static const MAIN_MENU_PROFILE:String="Profile";
+			public static const MAIN_MENU_EVENTS:String="Events";
+			public static const MAIN_MENU_FRIENDS:String="Friends";
+			public static const MAIN_MENU_MESSAGES:String="Messages";
+			public static const MAIN_MENU_NEARBY:String="Nearby";
+			public static const MAIN_MENU_GROUPS:String="Groups";
+			public static const MAIN_MENU_CHAT:String="Chat";
+			public static const MAIN_MENU_NOTIFICATIONS:String="Notifications";
+			public static const MAIN_MENU_UPLOAD_PHOTO:String="Upload Photo";
+			public static const MAIN_MENU_LOGOUT:String="Logout";
+			public static const MAIN_MENU_FRIEND_REQUESTS:String="Friend requests";
+			public static const MAIN_MENU_MORE_APPS:String="More apps";
+			public static const MAIN_MENU_EXIT_APP:String="Exit app";
+			public static const MAIN_MENU_SETTINGS:String = "Settings";
+			public static const MAIN_MENU_ABOUT:String = "About";
+
+			private function creationComplete():void
+			{
+				createMenuItems();
+			}
+
+			private function onListClick():void
+			{
+				EventCentral.getInstance().dispatchEvent(new CustomDataEvent(CustomDataEvent.MAIN_MENU_BUTTON_CLICKED, list.selectedItem.label));
+			}
+
+			private function createMenuItems():void
+			{
+				var friends:Object=new Object();
+				friends.icon="assets/images/icons/metalF6.png"
+				friends.label=MainMenuView.MAIN_MENU_FRIENDS;
+				_dp.addItem(friends);
+
+				var albumItem:Object=new Object();
+				albumItem.icon="assets/images/icons/metalPhotosSmall002.png"
+				albumItem.label=MainMenuView.MAIN_MENU_ALBUMS;
+				_dp.addItem(albumItem);
+
+				var newsItem:Object=new Object();
+				newsItem.icon="assets/images/icons/metalWallSmall002.png"
+				newsItem.label=MainMenuView.MAIN_MENU_NEWS_FEED;
+				_dp.addItem(newsItem);
+
+				var notifyItem:Object=new Object();
+				notifyItem.icon="assets/images/icons/metalGlobeSmall001.png"
+				notifyItem.label=MainMenuView.MAIN_MENU_NOTIFICATIONS;
+				_dp.addItem(notifyItem);
+				
+				var friendRequests:Object=new Object();
+				friendRequests.icon="assets/images/icons/metalAddFriendSmall001.png"
+				friendRequests.label=MainMenuView.MAIN_MENU_FRIEND_REQUESTS;
+				_dp.addItem(friendRequests);
+
+				var profileItem:Object=new Object();
+				profileItem.icon="assets/images/icons/metalWomanSmall001.png"
+				profileItem.label=MainMenuView.MAIN_MENU_PROFILE;
+				_dp.addItem(profileItem);
+
+				var eventsItem:Object=new Object();
+				eventsItem.icon="assets/images/icons/metalEventSmall002.png"
+				eventsItem.label=MainMenuView.MAIN_MENU_EVENTS;
+				_dp.addItem(eventsItem);
+
+
+				var messagesItem:Object=new Object();
+				messagesItem.icon="assets/images/icons/metalMessagesSmall001.png"
+				messagesItem.label=MainMenuView.MAIN_MENU_MESSAGES;
+				_dp.addItem(messagesItem);
+
+				var nearbyItem:Object=new Object();
+				nearbyItem.icon="assets/images/icons/metalLocationSmall002.png"
+				nearbyItem.label=MainMenuView.MAIN_MENU_NEARBY;
+				_dp.addItem(nearbyItem);
+
+				var groupsItem:Object=new Object();
+				groupsItem.icon="assets/images/icons/metalGroupSmall001.png"
+				groupsItem.label=MainMenuView.MAIN_MENU_GROUPS;
+				_dp.addItem(groupsItem);
+				
+				/*
+				var chatItem:Object=new Object();
+				chatItem.icon="assets/images/icons/metalChatSmall001.png"
+				chatItem.label=MainMenuView.MAIN_MENU_CHAT;
+				_dp.addItem(chatItem);
+				*/
+				
+				var uploadPhoto:Object=new Object();
+				uploadPhoto.icon="assets/images/icons/metalCameraSmall001.png"
+				uploadPhoto.label=MainMenuView.MAIN_MENU_UPLOAD_PHOTO;
+				_dp.addItem(uploadPhoto);
+
+				var settings:Object = new Object();
+				settings.icon="assets/images/icons/metalSettings001.png"
+				settings.label=MAIN_MENU_SETTINGS;
+				_dp.addItem(settings);
+				
+				var logout:Object=new Object();
+				logout.icon="assets/images/icons/metalLogoutSmall001.png"
+				logout.label=MainMenuView.MAIN_MENU_LOGOUT;
+				_dp.addItem(logout);
+				/*
+				var moreApps:Object = new Object();
+				moreApps.icon = "assets/images/icons/metalMoreApps.png"
+				moreApps.label = MainMenuView.MAIN_MENU_MORE_APPS;
+				_dp.addItem(moreApps);
+				*/
+				var about:Object = new Object();
+				about.icon = "assets/images/icons/metalAbout.png";
+				about.label = MainMenuView.MAIN_MENU_ABOUT;
+				_dp.addItem(about);
+				
+				var exit:Object = new Object();
+				exit.icon = "assets/images/icons/metalExitSmall.png"
+				exit.label= MainMenuView.MAIN_MENU_EXIT_APP;
+				_dp.addItem(exit);
+				
+			}
+		]]>
+	</fx:Script>
+
+	<s:VGroup width="100%"
+			  height="100%"
+			  gap="0"
+			  top="0">
+		<s:List id="list"
+				dataProvider="{_dp}"
+				width="100%"
+				height="100%"
+				click="onListClick()"
+				alternatingItemColors="{graphicsLib.getMainMenuItemRendererColors()}"
+				contentBackgroundAlpha="0"
+				useVirtualLayout="false">
+			<s:itemRenderer>
+				<fx:Component>
+					<s:IconItemRenderer iconFunction="myIconFunction"
+										labelFunction="myLabelFunction"
+										color="0x000000"
+										>
+						<fx:Script>
+							<![CDATA[
+								public function myLabelFunction(item:Object):String
+								{
+									return item.label;
+								}
+
+								public function myIconFunction(item:Object):String
+								{
+									if (item.hasOwnProperty("icon"))
+									{
+										return item.icon;
+									}
+									else
+									{
+										return null;
+									}
+								}
+							]]>
+						</fx:Script>
+					</s:IconItemRenderer>
+				</fx:Component>
+			</s:itemRenderer>
+		</s:List>
+	</s:VGroup>
+
+
+</s:View>

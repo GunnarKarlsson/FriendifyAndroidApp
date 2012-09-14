@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				autoDrawBackground="false"
+				contentBackgroundAlpha="0"
+				width="100%" height="100" xmlns:customComponents="customComponents.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.facebook.graph.FacebookMobile;
+			
+			import mx.core.FlexGlobals;
+			
+			import spark.core.ContentCache;
+			
+			import views.user.SingleUserView;
+			
+			[Bindable]private var _imageCache:ContentCache = FlexGlobals.topLevelApplication.imageCache;
+			
+			[Bindable]private var _imageSource:String;
+			
+			override public function set data(value:Object):void {
+				
+				super.data = value;
+				
+				if (data == null)
+				{					
+					return;
+				}
+				
+				if(value.hasOwnProperty("label"))
+				{
+					nameField.text = value.label as String;	
+				}
+				
+				if(value.hasOwnProperty("id"))
+				{
+					_imageSource = FacebookMobile.getImageUrl(value.id,'square');
+				}	
+			}
+			
+		]]>
+	</fx:Script>
+	
+<customComponents:PortraitFrame id="portraitFrame"/>
+	
+	<s:Image id="thumbnail"
+			 x="{portraitFrame.x+5}"
+			 y="{portraitFrame.y+5}"
+			 width="50"
+			 height="50"
+			 source="{_imageSource}"
+			 contentLoader="{_imageCache}"
+			 enableLoadingState="true"
+			 backgroundColor="#999999"/>
+	
+	<s:HGroup x="{portraitFrame.x + portraitFrame.width}"
+			  width="100%"
+			  height="100%"
+			  paddingBottom="20"
+			  paddingLeft="0"
+			  paddingRight="20"
+			  paddingTop="10">
+		<s:SkinnableContainer id="outerBox"
+							  skinClass="itemrenderers.newsFeedItemRenderer.skins.NewsFeedSkin"
+							  width="100%"
+							  height="100%">
+			
+			<s:VGroup width="100%"
+					  height="100%"
+					  paddingBottom="5"
+					  paddingLeft="5"
+					  paddingRight="5"
+					  paddingTop="5"
+					  gap="0">
+				
+				<s:SkinnableContainer id="topInnerBox"
+									  skinClass="itemrenderers.newsFeedItemRenderer.skins.TopBox"
+									  width="100%"
+									  height="100%">
+					<s:VGroup width="100%"
+							  height="100%"
+							  paddingBottom="10"
+							  paddingLeft="10"
+							  paddingRight="10"
+							  paddingTop="20">
+						
+						<s:RichEditableText id="nameField"
+											selectable="false"
+											editable="false"
+											multiline="true"
+											width="100%"
+											styleName="headerText"/>
+					</s:VGroup>
+				</s:SkinnableContainer>
+				
+
+			</s:VGroup>
+		</s:SkinnableContainer>
+		
+	</s:HGroup>
+	
+</s:ItemRenderer>

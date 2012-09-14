@@ -1,0 +1,432 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				width="100%"
+				autoDrawBackground="false"
+				contentBackgroundAlpha="0"
+				xmlns:styles="styles.*"
+				xmlns:customComponents="customComponents.*"
+				currentState="startState"
+				cacheAsBitmap="true">
+
+	<fx:Declarations>
+		<styles:GraphicsLib id="graphicsLib"/>
+	</fx:Declarations>
+
+	<s:states>
+		<s:State name="startState"/>
+		<s:State name="newFriendsState"/>
+	</s:states>
+
+	<fx:Script>
+		<![CDATA[
+			import com.facebook.graph.FacebookMobile;
+			import com.squidzoo.StringUtils.URLValidator;
+
+			import flashx.textLayout.conversion.TextConverter;
+			import flashx.textLayout.elements.Configuration;
+			import flashx.textLayout.elements.TextFlow;
+			import flashx.textLayout.formats.TextDecoration;
+			import flashx.textLayout.formats.TextLayoutFormat;
+
+			import itemrenderers.newsFeedItemRenderer.skins.BottomBox;
+
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+
+			import spark.components.VGroup;
+			import spark.core.ContentCache;
+			import spark.primitives.Graphic;
+
+			import utils.FacebookTimeParser;
+			import utils.RelativeDate;
+
+			import views.comments.CommentsView;
+			import views.friends.PeopleList;
+			import views.place.PlaceView;
+			import views.user.SingleUserView;
+
+			[Bindable]
+			private var thumbnailUrl:String;
+			[Bindable]
+			private var pictureurl:String;
+			[Bindable]
+			private var theName:String;
+
+			private var storyTags:Object;
+
+			[Bindable]
+			private var commentsDataProvider:ArrayCollection=new ArrayCollection();
+
+			[Bindable]
+			private var thumbNailSource:String;
+
+			[Bindable]
+			private var cache:ContentCache=FlexGlobals.topLevelApplication.imageCache;
+
+			[Bindable]
+			public var forCompiler:BottomBox;
+
+			private var _urlValidator:URLValidator=new URLValidator();
+
+			private function setMessage(str:String):void
+			{
+				var txt:String=_urlValidator.tag(str);
+				var config:Configuration=TextFlow.defaultConfiguration;
+				message.textFlow=TextConverter.importToFlow(txt, TextConverter.TEXT_FIELD_HTML_FORMAT);
+			}
+
+			override public function set data(value:Object):void
+			{
+				if (value == null || (data && data.id == value.id))
+				{
+					return;
+				}
+
+				super.data=value;
+
+				this.addEventListener(MouseEvent.CLICK, onMouseClick);
+
+				if (value.from)
+				{
+					nameField.text=value.from.name;
+					thumbNailSource=FacebookMobile.getImageUrl(value.from.id.toString(), 'square');
+				}
+
+				if (value.message)
+				{
+					if (_urlValidator.findValid(value.message) == false)
+					{
+						message.text=value.message;
+					}
+					else
+					{
+						setMessage(value.message);
+					}
+				}
+				else if (value.story)
+				{
+					if (_urlValidator.findValid(value.story) == false)
+					{
+						message.text=value.story;
+					}
+					else
+					{
+						setMessage(value.story);
+					}
+				}
+				else
+				{
+					message.includeInLayout=false;
+				}
+
+				if (value.storyTags && value.story && (value.picture == undefined || value.picture == null))
+				{
+					picAndBody.includeInLayout=false;
+
+				}
+
+				if (value.storyTags)
+				{
+					storyTags=value.storyTags;
+				}
+
+				if (value.story != null || value.story != undefined)
+				{
+					var pattern:RegExp=/now friends/;
+					if (pattern.test(value.story))
+					{
+						//trace("newFriendsState!" +data.story);
+						currentState="newFriendsState";
+					}
+				}
+
+				if (value.picture)
+				{
+					//trace("nfitwsb value.picture :"+value.picture);
+					picture.source=value.picture;
+				}
+				else
+				{
+					picture.includeInLayout=false;
+				}
+
+				if (value.comments != null)
+				{
+					commentsDataProvider.source=(value.comments.data) ? value.comments.data : [];
+				}
+
+				if (value.link)
+				{
+					var txt:String="<a href='" + value.link + "' target='_top'>" + value.name + "</a>.";
+					var config:Configuration=TextFlow.defaultConfiguration;
+					configureLink(config);
+					link.textFlow=TextConverter.importToFlow(txt, TextConverter.TEXT_FIELD_HTML_FORMAT, config);
+
+				}
+				else
+				{
+					link.includeInLayout=false;
+				}
+
+				if (value.caption)
+				{
+					if (_urlValidator.findValid(value.caption) == false)
+					{
+						caption.text=value.caption;
+					}
+					else
+					{
+						var text:String=_urlValidator.tag(value.caption);
+						caption.textFlow=TextConverter.importToFlow(text, TextConverter.TEXT_FIELD_HTML_FORMAT, config);
+					}
+				}
+				else
+				{
+					caption.includeInLayout=false;
+				}
+
+				if (value.description)
+				{
+					if (_urlValidator.findValid(value.description) == false)
+					{
+						description.text=value.description;
+					}
+					else
+					{
+						var t:String=_urlValidator.tag(value.description);
+						description.textFlow=TextConverter.importToFlow(t, TextConverter.TEXT_FIELD_HTML_FORMAT, config);
+					}
+				}
+				else
+				{
+					description.includeInLayout=false;
+				}
+
+				if (value.created_time)
+				{
+					var date:Date=FacebookTimeParser.parseDate(value.created_time);
+					createdTime.text=RelativeDate.getRelativeDateFromNow(date, false);
+				}
+
+				if (link.includeInLayout == false && caption.includeInLayout == false && description.includeInLayout == false && picture.includeInLayout == false)
+				{
+					picAndBody.includeInLayout=false;
+				}
+
+				if (value.likesCount < 1 && value.commentsCount < 1)
+				{
+					bottomBox.includeInLayout=false;
+					bottomBox.visible=false;
+				}
+
+				if (link.text == "null." || link.text == "null")
+				{
+					link.text="";
+				}
+			/*
+			var re:RegExp = /(added)|(updated)/;
+			var searchStr:String = value.story;
+
+				trace("story: "+data.story);
+				if(value.type == "status" && value.story)
+				{
+					if(searchStr.search(re)>-1)
+					{
+						currentState = "profileUpdate";
+						trace("state: "+currentState);
+					}
+				}*/
+			}
+
+			private function configureLink(config:Configuration):void
+			{
+				var normalFmt:TextLayoutFormat=new TextLayoutFormat(config.defaultLinkNormalFormat);
+				normalFmt.color=0xff9900;
+				normalFmt.textDecoration=TextDecoration.NONE;
+
+				var hoverFmt:TextLayoutFormat=new TextLayoutFormat(config.defaultLinkHoverFormat);
+				hoverFmt.color=0xff9900;
+				hoverFmt.textDecoration=TextDecoration.UNDERLINE;
+
+				config.defaultLinkNormalFormat=normalFmt;
+				config.defaultLinkHoverFormat=hoverFmt;
+			}
+
+			protected function onMouseClick(event:Event):void
+			{
+				//new friends
+
+				trace("data.type: " + data.type);
+
+				if (currentState == "newFriendsState" && data.type == "status")
+				{
+					FlexGlobals.topLevelApplication.navigator.pushView(PeopleList, storyTags);
+							
+				}
+				else if (data.type == "photo")
+				{
+					var dataObject:Object=new Object();
+					dataObject.type="PhotoVO"; //for commentView to recognize object type						
+					var pattern:RegExp=/\d+/; //one or more numbers
+					var a:Array=pattern.exec(data.link) as Array; //find numbers in picture url
+					dataObject.id=a[0]; //source object's id	
+					FlexGlobals.topLevelApplication.navigator.pushView(CommentsView, dataObject);
+				}
+				else if (data.type == "checkin")
+				{
+					var vo:Object=new Object();
+					vo.id=data.place.id;
+					FlexGlobals.topLevelApplication.navigator.pushView(PlaceView, vo);
+				}
+				else
+				{
+					FlexGlobals.topLevelApplication.navigator.pushView(CommentsView, data);
+				}
+			}
+		]]>
+	</fx:Script>
+
+	<customComponents:PortraitFrame id="portraitFrame"/>
+
+	<s:Image id="thumbnail"
+			 x="{portraitFrame.x+5}"
+			 y="{portraitFrame.y+5}"
+			 maxWidth="100"
+			 maxHeight="100"
+			 enableLoadingState="true"
+			 backgroundColor="#999999"
+			 contentLoader="{cache}"
+			 source="{thumbNailSource}"/>
+
+	<s:HGroup x="{portraitFrame.x + portraitFrame.width}"
+			  width="100%"
+			  height="100%"
+			  paddingBottom="20"
+			  paddingLeft="0"
+			  paddingRight="20"
+			  paddingTop="10">
+		<s:SkinnableContainer id="outerBox"
+							  skinClass="itemrenderers.newsFeedItemRenderer.skins.NewsFeedSkin"
+							  width="100%"
+							  height="100%">
+
+			<s:VGroup width="100%"
+					  height="100%"
+					  paddingBottom="5"
+					  paddingLeft="5"
+					  paddingRight="5"
+					  paddingTop="5"
+					  gap="0">
+
+				<s:SkinnableContainer id="topInnerBox"
+									  skinClass="itemrenderers.newsFeedItemRenderer.skins.TopBox"
+									  width="100%"
+									  height="100%">
+					<s:VGroup width="100%"
+							  height="100%"
+							  paddingBottom="10"
+							  paddingLeft="10"
+							  paddingRight="10"
+							  paddingTop="10">
+
+						<s:RichEditableText id="nameField"
+											selectable="false"
+											editable="false"
+											multiline="true"
+											width="100%"
+											styleName="headerText"/>
+						<s:RichEditableText id="message"
+											width="100%"
+											editable="false"
+											multiline="true"
+											selectable="false"
+											styleName="bodyTextWhite"
+											text="{message}"/>
+					</s:VGroup>
+				</s:SkinnableContainer>
+
+				<s:SkinnableContainer id="middleBox"
+									  width="100%"
+									  height="100%"
+									  skinClass="itemrenderers.newsFeedItemRenderer.skins.MiddleBox">
+					<s:VGroup width="100%"
+							  height="100%"
+							  paddingLeft="10"
+							  paddingRight="10"
+							  paddingTop="10"
+							  paddingBottom="20">
+						<s:HGroup id="picAndBody"
+								  width="100%"
+								  height="100%"
+								  paddingBottom="5"
+								  paddingLeft="5"
+								  paddingRight="5"
+								  paddingTop="5">
+
+							<s:Group>
+								<s:Image id="picture"
+										 left="5"
+										 right="5"
+										 maxWidth="100"
+										 maxHeight="100"/>
+							</s:Group>
+
+							<s:VGroup width="100%"
+									  height="100%"
+									  paddingLeft="5"
+									  paddingBottom="5"
+									  paddingRight="5"
+									  paddingTop="5">
+								<s:RichEditableText id="link"
+													selectable="false"
+													editable="false"
+													multiline="true"
+													styleName="headerText"
+													width="100%"/>
+								<s:RichEditableText id="caption"
+													selectable="false"
+													editable="false"
+													multiline="true"
+													styleName="bodyTextBlack"
+													width="100%"/>
+							</s:VGroup>
+						</s:HGroup>
+						<s:RichEditableText id="description"
+											selectable="false"
+											editable="false"
+											multiline="true"
+											styleName="bodyTextBlack"
+											width="100%"/>
+						<s:RichEditableText id="createdTime"
+											selectable="false"
+											editable="false"
+											multiline="true"
+											styleName="bodyTextGrey"
+											width="100%"/>
+					</s:VGroup>
+				</s:SkinnableContainer>
+
+				<s:SkinnableContainer id="bottomBox"
+									  width="100%"
+									  height="45"
+									  skinClass="itemrenderers.newsFeedItemRenderer.skins.BottomBox">
+					<s:HGroup paddingLeft="10"
+							  paddingRight="10"
+							  paddingTop="5"
+							  paddingBottom="0">
+						<customComponents:ActionsComponent id="actions"
+														   dataObject="{data}"/>
+						<!--<s:Label text="65 likes"
+								 styleName="bodyText"/>
+						<s:Label text="112 comments"
+								 styleName="bodyText"/>-->
+					</s:HGroup>
+				</s:SkinnableContainer>
+			</s:VGroup>
+		</s:SkinnableContainer>
+
+	</s:HGroup>
+
+</s:ItemRenderer>
