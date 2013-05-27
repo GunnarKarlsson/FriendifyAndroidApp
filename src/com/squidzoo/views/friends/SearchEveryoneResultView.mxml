@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		title="Search Result"
+		viewActivate="onViewActivate()"
+		viewDeactivate="onViewDeactivate()"
+		xmlns:customComponents="com.squidzoo.friendify.customComponents.*"
+		xmlns:loadingAndErrorMessage="com.squidzoo.friendify.customComponents.loadingAndErrorMessage.*">
+
+	<s:states>
+		<s:State name="loading"/>
+		<s:State name="error"/>
+		<s:State name="complete"/>
+	</s:states>
+
+	<fx:Script>
+		<![CDATA[
+			import com.facebook.graph.FacebookMobile;
+
+			import com.squidzoo.friendify.itemrenderers.FriendsItemRendererWithSpeechBubbleLayout;
+			import com.squidzoo.friendify.itemrenderers.LoadingItemRenderer;
+
+			import mx.collections.ArrayCollection;
+
+			import com.squidzoo.services.FBService;
+
+			private var _service:FBService=new FBService();
+
+			[Bindable]
+			private var _dp:ArrayCollection=new ArrayCollection();
+
+			private function onViewActivate():void
+			{
+				_service.addEventListener(FBService.SEARCH_EVERYONE_ERROR, onSearchError);
+				_service.addEventListener(FBService.SEARCH_EVERYONE_SUCCESS, onSuccess);
+				getSearchResult();
+			}
+
+			private function onViewDeactivate():void
+			{
+				if (_service.hasEventListener(FBService.SEARCH_EVERYONE_ERROR))
+				{
+					_service.removeEventListener(FBService.SEARCH_EVERYONE_ERROR, onSearchError);
+				}
+				if (_service.hasEventListener(FBService.SEARCH_EVERYONE_SUCCESS))
+				{
+					_service.removeEventListener(FBService.SEARCH_EVERYONE_SUCCESS, onSuccess);
+				}
+				if(list)
+				{
+					list.cleanUp();	
+				}
+			}
+
+			private function getSearchResult():void
+			{	
+				currentState="loading";
+				_service.searchEveryone(data.params);
+			}
+
+			private function chooseListItemRenderer(item:Object):ClassFactory
+			{
+				var ir:Class=FriendsItemRendererWithSpeechBubbleLayout;
+
+				switch (item.type)
+				{
+					case "loading":
+						ir=LoadingItemRenderer;
+						break;
+
+					default:
+						break;
+				}
+				return new ClassFactory(ir);
+			}
+
+			private function onLoadNext():void
+			{
+				_service.getNextSearchEveryonePage();
+			}
+
+			private function onSearchError(event:Event):void
+			{
+				_service.removeEventListener(FBService.SEARCH_EVERYONE_ERROR, onSearchError);
+				_service.removeEventListener(FBService.SEARCH_EVERYONE_SUCCESS, onSuccess);
+				currentState="error";
+			}
+
+			private function onSuccess(event:Event):void
+			{
+				_service.removeEventListener(FBService.SEARCH_EVERYONE_ERROR, onSearchError);
+				_service.removeEventListener(FBService.SEARCH_EVERYONE_SUCCESS, onSuccess);
+				_dp=_service.searchEveryoneResult;
+				trace(_dp.length);
+				currentState="complete";
+				list.setPostFeedReceivedState();
+			}
+		]]>
+	</fx:Script>
+
+	<!--loading,error state-->
+	<s:VGroup width="100%"
+			  height="100%"
+			  includeIn="loading,error"
+			  verticalCenter="0"
+			  horizontalCenter="0"
+			  verticalAlign="middle"
+			  horizontalAlign="center">
+		<loadingAndErrorMessage:LoadingAndErrorMessageComponent id="loadingMessage"
+																message="Loading content..."
+																includeIn="loading"/>
+		<loadingAndErrorMessage:LoadingAndErrorMessageComponent id="errorMessage"
+																message="Error loading content..."
+																includeIn="error"/>
+	</s:VGroup>
+
+	<customComponents:PullDownToRefreshAndPullUpToGetOlderList id="list"
+															   dataProvider="{_dp}"
+															   getFeedFunction="{getSearchResult}"
+															   width="100%"
+															   height="100%"
+															   listItemRendererFunction="chooseListItemRenderer"
+															   loadOlder="onLoadNext()"
+															   backgroundAlpha="0"
+															   includeIn="complete"/>
+
+</s:View>

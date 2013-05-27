@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="utf-8"?>
+<customComponents:CustomView xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" xmlns:customComponents="com.squidzoo.friendify.customComponents.*"
+					   title="User Info"
+					   creationComplete="onCreationComplete()"
+					   destructionPolicy="never"
+					   currentState="loading" xmlns:loadingAndErrorMessage="com.squidzoo.friendify.customComponents.loadingAndErrorMessage.*" xmlns:styles="com.squidzoo.styles.*">
+	
+	<!--use same namespace as component to avoid compile-time 'could not resolve to component' error-->
+	<customComponents:states>
+		<s:State name="loading"/>
+		<s:State name="complete"/>
+		<s:State name="error"/>
+	</customComponents:states>
+	
+	<styles:GraphicsLib id="graphicsLib"/>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.facebook.graph.FacebookMobile;
+			import com.squidzoo.eventSystem.EventCentral;
+			import com.squidzoo.eventSystem.events.CustomDataEvent;
+			import com.squidzoo.eventSystem.events.CustomEvent;
+			
+			import com.squidzoo.friendify.customComponents.callouts.MainMenuCallout;
+			
+			import com.squidzoo.friendify.itemrenderers.AlertItemRenderer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.UIComponent;
+			
+			import spark.events.PopUpEvent;
+			
+			[Bindable]
+			private var _dp:ArrayCollection=new ArrayCollection();
+			
+			private var _mainmenuCallout:MainMenuCallout = new MainMenuCallout();
+			
+			private function onCreationComplete():void
+			{
+				currentState="loading";
+				var query:String="SELECT uid,name,sex,birthday,relationship_status," + "political,current_location,activities,interests,music,tv,books,movies,quotes,about_me,website," + "contact_email,games,work,education,sports,languages FROM user WHERE uid=" + data.id;
+				FacebookMobile.fqlQuery(query, handleQuery);
+			}
+			
+			private function handleQuery(success:Object, fail:Object):void
+			{
+				
+				if (success)
+				{
+					
+					var response:Array=success as Array;
+					
+					if (response[0]!= undefined && response[0]!=null)
+					{
+						if (response[0].hasOwnProperty("name") && (response[0].name != null) && (response[0].name != ""))
+						{
+							var nameItem:Object=new Object();
+							nameItem.label="Name";
+							nameItem.details=response[0].name;
+							nameItem.icon=FacebookMobile.getImageUrl(response[0].uid, "large");
+							_dp.addItem(nameItem);
+						}
+						
+						if (response[0].hasOwnProperty("birthday") && (response[0].birthday != null) && (response[0].birthday != ""))
+						{
+							var bdItem:Object=new Object();
+							bdItem.label="Birthday";
+							bdItem.details=response[0].birthday;
+							_dp.addItem(bdItem);
+						}
+						
+						if (response[0].hasOwnProperty("sex") && (response[0].sex != null) && (response[0].sex != ""))
+						{
+							var sexItem:Object=new Object();
+							sexItem.label="Sex";
+							sexItem.details=response[0].sex;
+							if (response[0].sex.toLowerCase() == "male")
+							{
+								sexItem.icon="assets/images/icons/metalMaleSmall001.png";
+							}
+							else
+							{
+								sexItem.icon="assets/images/icons/metalFemaleSmall001.png";
+							}
+							_dp.addItem(sexItem);
+						}
+						
+						
+						if (response[0].hasOwnProperty("relationship_status") && (response[0].relationship_status != null) && (response[0].relationship_status != ""))
+						{
+							var rsItem:Object=new Object();
+							rsItem.label="Relationship status";
+							rsItem.details=response[0].relationship_status;
+							rsItem.icon="assets/images/icons/metalHeartSmall001.png";
+							_dp.addItem(rsItem);
+						}
+						
+						
+						if (response[0].hasOwnProperty("about_me") && (response[0].about_me != null) && (response[0].about_me != ""))
+						{
+							var amItem:Object=new Object();
+							amItem.label="About me";
+							amItem.details=response[0].about_me;
+							amItem.icon="assets/images/icons/metalPenSmall001.png";
+							_dp.addItem(amItem);
+						}
+						
+						if (response[0].hasOwnProperty("political") && (response[0].political != null) && (response[0].political != ""))
+						{
+							var polItem:Object=new Object();
+							polItem.label="Political view";
+							polItem.details=response[0].political;
+							polItem.icon="assets/images/icons/metalPoliticalSmall001.png";
+							_dp.addItem(polItem);
+						}
+						
+						if (response[0].hasOwnProperty("current_location") && (response[0].current_location != null) && (response[0].current_location != ""))
+						{
+							var locItem:Object=new Object();
+							locItem.label="Current location";
+							locItem.details=response[0].current_location.city + ", " + response[0].current_location.country;
+							locItem.icon="assets/images/icons/metalLocationSmall001.png";
+							_dp.addItem(locItem);
+						}
+						
+						if (response[0].hasOwnProperty("activities") && (response[0].activities != null) && (response[0].activities != ""))
+						{
+							var actItem:Object=new Object();
+							actItem.label="Activities";
+							actItem.details=response[0].activities;
+							actItem.icon="assets/images/icons/metalFlashSmall001.png";
+							_dp.addItem(actItem);
+						}
+						
+						if (response[0].hasOwnProperty("interests") && (response[0].interests != null) && (response[0].interests != ""))
+						{
+							var interestItem:Object=new Object();
+							interestItem.label="Interests";
+							interestItem.details=response[0].interests;
+							interestItem.icon="assets/images/icons/metalMagnifySmall001.png";
+							_dp.addItem(interestItem);
+						}
+						
+						if (response[0].hasOwnProperty("music") && (response[0].music != null) && (response[0].music != ""))
+						{
+							var musicItem:Object=new Object();
+							musicItem.label="Music";
+							musicItem.details=response[0].music;
+							musicItem.icon="assets/images/icons/metalMusicSmall.png";
+							_dp.addItem(musicItem);
+						}
+						
+						if (response[0].hasOwnProperty("movies") && (response[0].movies != null) && (response[0].movies != ""))
+						{
+							var movItem:Object=new Object();
+							movItem.label="Movies";
+							movItem.details=response[0].movies;
+							movItem.icon="assets/images/icons/metalMoviesSmall001.png";
+							_dp.addItem(movItem);
+						}
+						
+						if (response[0].hasOwnProperty("tv") && (response[0].tv != null) && (response[0].tv != ""))
+						{
+							var tvItem:Object=new Object();
+							tvItem.label="TV";
+							tvItem.details=response[0].tv;
+							tvItem.icon="assets/images/icons/metalTVSmall001.png";
+							_dp.addItem(tvItem);
+						}
+						
+						if (response[0].hasOwnProperty("books") && (response[0].books != null) && (response[0].books != ""))
+						{
+							var booksItem:Object=new Object();
+							booksItem.label="Books";
+							booksItem.details=response[0].books;
+							booksItem.icon="assets/images/icons/metalBookSmall001.png";
+							_dp.addItem(booksItem);
+						}
+						
+						if (response[0].hasOwnProperty("quotes") && (response[0].quotes != null) && (response[0].quotes != ""))
+						{
+							var qItem:Object=new Object();
+							qItem.label="Quotes";
+							qItem.details=response[0].quotes;
+							_dp.addItem(qItem);
+						}
+						
+						if (response[0].hasOwnProperty("website") && (response[0].website != null) && (response[0].website != ""))
+						{
+							var wsItem:Object=new Object();
+							wsItem.label="Website";
+							wsItem.details=response[0].website;
+							_dp.addItem(wsItem);
+						}
+						
+						if (response[0].hasOwnProperty("contact_email") && (response[0].contact_email != null) && (response[0].contact_email != ""))
+						{
+							var eItem:Object=new Object();
+							eItem.label="Contact email";
+							eItem.details=response[0].contact_email;
+							eItem.icon="assets/images/icons/metalEmailSmall001.png";
+							_dp.addItem(eItem);
+						}
+						
+						if (response[0].hasOwnProperty("games") && (response[0].games != null) && (response[0].games != ""))
+						{
+							var gItem:Object=new Object();
+							gItem.label="Games";
+							gItem.details=response[0].games;
+							gItem.icon="assets/images/icons/metalGamesSmall001.png";
+							_dp.addItem(gItem);
+						}
+						
+					}
+					
+					if(_dp.length<1){
+						var item:Object= new Object();
+						item.icon = "assets/images/icons/metalAlertSmall001.png";
+						item.label = "No info available";
+						item.message = "User has no info or has restricted access";
+						_dp.addItem(item);
+						currentState="complete";
+						list.itemRenderer = new ClassFactory(AlertItemRenderer);
+					}
+					
+					currentState="complete";
+				}
+				else
+				{
+					currentState="error";
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<!--loading,error state-->
+	<s:VGroup width="100%"
+			  height="100%"
+			  includeIn="loading,error"
+			  verticalCenter="0"
+			  horizontalCenter="0"
+			  verticalAlign="middle"
+			  horizontalAlign="center">
+		<loadingAndErrorMessage:LoadingAndErrorMessageComponent id="loadingMessage"
+																message="Loading content..."
+																includeIn="loading"/>
+		<loadingAndErrorMessage:LoadingAndErrorMessageComponent id="errorMessage"
+																message="Error loading content..."
+																includeIn="error"/>
+	</s:VGroup>
+	
+	<s:VGroup width="100%"
+			  height="100%"
+			  includeIn="complete">
+		<s:List id="list"
+				dataProvider="{_dp}"
+				width="100%"
+				height="100%"
+				alternatingItemColors="{graphicsLib.getMainMenuItemRendererColors()}"
+				contentBackgroundAlpha="0">
+			<s:itemRenderer>
+				<fx:Component>
+					<s:IconItemRenderer iconFunction="myIconFunction"
+										labelFunction="myLabelFunction"
+										messageFunction="myMessageFunction">
+						<fx:Script>
+							<![CDATA[
+								public function myLabelFunction(item:Object):String
+								{
+									return item.label;
+								}
+								
+								public function myMessageFunction(item:Object):String
+								{
+									return item.details;
+								}
+								
+								public function myIconFunction(item:Object):String
+								{
+									if (item.hasOwnProperty("icon"))
+									{
+										return item.icon;
+									}
+									else
+									{
+										return null;
+									}
+								}
+							]]>
+						</fx:Script>
+					</s:IconItemRenderer>
+				</fx:Component>
+			</s:itemRenderer>
+		</s:List>
+	</s:VGroup>
+</customComponents:CustomView>

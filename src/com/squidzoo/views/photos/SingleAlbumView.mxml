@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		viewActivate="onViewActivate()"
+		viewDeactivate="onViewDeactivate()"
+		xmlns:styles="com.squidzoo.styles.*"
+		xmlns:album="com.squidzoo.friendify.itemrenderers.album.*"
+		actionBarVisible="{_actionBarVisible}"
+		destructionPolicy="never" xmlns:loadingAndErrorMessage="com.squidzoo.friendify.customComponents.loadingAndErrorMessage.*">
+
+	<s:states>
+		<s:State name="loading"/>
+		<s:State name="complete"/>
+		<s:State name="error"/>
+	</s:states>
+	
+	<s:actionContent>
+		<s:Button id="threeDLayout"
+				  icon="@Embed('assets/images/album/metalCube001.png')"
+				  click="onClickChangeLayout(event)"/>
+		<s:Button id="fullScreenLayout"
+				  icon="@Embed('assets/images/album/metalFullScreen001.png')"
+				  click="makeFullScreen(event)"/>
+		<s:Button id="listLayout"
+				  icon="@Embed('assets/images/album/metalGrid001.png')"
+				  click="onClickGridIcon()"/>
+		<s:Button id="gridLayout"
+				  icon="@Embed('assets/images/album/metalList001.png')"
+				  click="onClickListIcon()"/>
+	</s:actionContent>
+
+	<fx:Declarations>
+		<styles:GraphicsLib id="graphicsLib"/>
+		<album:PhotoInGridItemRenderer id="gridIr"/>
+		<album:PhotoInListItemRenderer id="listIr"/>
+		<s:VerticalLayout id="verticalLayout"
+						  gap="0"
+						  paddingTop="0"/>
+		<s:HorizontalLayout id="horizontalLayout"/>
+		<s:TileLayout id="tileLayout"
+					  verticalAlign="top"
+					  paddingLeft="20"
+					  paddingRight="20"
+					  paddingTop="20"
+					  paddingBottom="20"
+					  horizontalGap="20"
+					  verticalGap="20"
+					  columnAlign="justifyUsingGap"
+					  rowAlign="top"/>
+		<s:TileLayout id="pagingTileLayout"
+					  orientation="rows"
+					  requestedRowCount="1"
+					  columnWidth="{list.width}"
+					  rowHeight="{list.height}"
+					  verticalGap="0"
+					  horizontalGap="0"/>
+	</fx:Declarations>
+
+	<fx:Script>
+		<![CDATA[
+			import com.squidzoo.eventSystem.EventCentral;
+			import com.squidzoo.eventSystem.events.CustomEvent;
+			
+			import com.squidzoo.friendify.itemrenderers.album.PhotoInListItemRenderer;
+			import com.squidzoo.friendify.itemrenderers.album.PhotoPagingItemRenderer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import com.squidzoo.services.FBService;
+			
+			import com.squidzoo.views.comments.CommentsView;
+			import com.squidzoo.views.comments.CommentsViewNoPulldown;
+			import com.squidzoo.views.coverflow.CoverFlowView;
+
+			private var _isFullScreen:Boolean=false;
+
+			[Bindable]
+			private var _photos:ArrayCollection=new ArrayCollection();
+
+			private var _service:FBService=new FBService();
+			[Bindable]
+			private var _vertScrollPolicy:String="auto";
+			[Bindable]
+			private var _horizontalScrollPolicy:String="off";
+
+			[Bindable]
+			private var _actionBarVisible:Boolean=true;
+
+			private function onViewActivate():void
+			{
+				currentState = "loading";
+				
+				
+
+				_service.addEventListener(FBService.GET_PHOTOS_IN_ALBUM_SUCCESS, onGetPhotosInAlbumSuccess);
+				_service.addEventListener(FBService.GET_PHOTOS_IN_ALBUM_ERROR, onGetPhotosInAlbumError);
+				_service.getPhotosInAlbum(data.id);
+			}
+
+			private function onViewDeactivate():void
+			{
+				if (_service.hasEventListener(FBService.GET_PHOTOS_IN_ALBUM_SUCCESS))
+				{
+					_service.removeEventListener(FBService.GET_PHOTOS_IN_ALBUM_SUCCESS, onGetPhotosInAlbumSuccess);
+				}
+				if (_service.hasEventListener(FBService.GET_PHOTOS_IN_ALBUM_ERROR))
+				{
+					_service.removeEventListener(FBService.GET_PHOTOS_IN_ALBUM_ERROR, onGetPhotosInAlbumError);
+				}
+				if (list && list.hasEventListener(MouseEvent.DOUBLE_CLICK))
+				{
+					list.removeEventListener(MouseEvent.DOUBLE_CLICK, onDoubleClick);
+				}
+				if (list && list.hasEventListener(MouseEvent.CLICK))
+				{
+					list.addEventListener(MouseEvent.CLICK, onClickList);
+				}
+			}
+
+			private function clickHomeButton():void
+			{
+				EventCentral.getInstance().dispatchEvent(new CustomEvent(CustomEvent.PUSH_HOME_VIEW));
+			}
+
+			private function onClickListIcon():void
+			{
+				list.itemRenderer=new ClassFactory(com.squidzoo.friendify.itemrenderers.album.PhotoInListItemRenderer);
+				list.layout=verticalLayout;
+			}
+
+			private function onClickGridIcon():void
+			{
+				list.itemRenderer=new ClassFactory(com.squidzoo.friendify.itemrenderers.album.PhotoInGridItemRenderer);
+				list.layout=tileLayout;
+			}
+
+			private function makeFullScreen(event:Event=null):void
+			{
+				list.doubleClickEnabled=true
+				list.removeEventListener(MouseEvent.CLICK, onClickList);
+				list.addEventListener(MouseEvent.DOUBLE_CLICK, onDoubleClick);
+
+				_isFullScreen=true;
+				_actionBarVisible=false;
+				list.layout=pagingTileLayout;
+				_vertScrollPolicy="off";
+				_horizontalScrollPolicy="on";
+				list.itemRenderer=new ClassFactory(PhotoPagingItemRenderer);
+				list.pageScrollingEnabled=true;
+			}
+
+			private function makeGrid():void
+			{
+				if (list.hasEventListener(MouseEvent.DOUBLE_CLICK))
+				{
+					list.removeEventListener(MouseEvent.DOUBLE_CLICK, onDoubleClick);
+				}
+				list.addEventListener(MouseEvent.CLICK, onClickList);
+				_actionBarVisible=true;
+				list.layout=tileLayout;
+				_vertScrollPolicy="on";
+				_horizontalScrollPolicy="off";
+				list.itemRenderer=new ClassFactory(PhotoInGridItemRenderer);
+				list.pageScrollingEnabled=false;
+			}
+
+			private function onDoubleClick(event:Event):void
+			{
+				if (!_isFullScreen)
+				{
+					makeFullScreen();
+				}
+				else
+				{
+					makeGrid();
+				}
+			}
+
+			private function onClickChangeLayout(event:MouseEvent):void
+			{
+				switch (event.target.id)
+				{
+					case "threeDLayout":
+						var vo:Object=new Object();
+						vo.photos=_photos;
+						navigator.pushView(CoverFlowView, vo);
+					case "gridLayout":
+						break;
+					case "listLayout":
+						break;
+				}
+			}
+
+			private function onGetPhotosInAlbumSuccess(event:Event):void
+			{
+				
+				_service.removeEventListener(FBService.GET_PHOTOS_IN_ALBUM_SUCCESS, onGetPhotosInAlbumSuccess);
+				_photos=_service.photosInAlbum; //returns PhotoVOs.
+				currentState = "complete";
+				list.addEventListener(MouseEvent.CLICK, onClickList);
+			}
+
+			private function onGetPhotosInAlbumError(event:Event):void
+			{
+				
+				_service.removeEventListener(FBService.GET_PHOTOS_IN_ALBUM_ERROR, onGetPhotosInAlbumError);
+				currentState = "error";
+			}
+
+			private function onClickList(event:Event):void
+			{
+				navigator.pushView(CommentsViewNoPulldown, list.selectedItem);
+			}
+		
+		]]>
+	</fx:Script>
+	
+	<s:Rect width="100%" height="100%" alpha="0.8">
+		<s:fill>
+			<s:SolidColor color="#000000"/>
+		</s:fill>
+	</s:Rect>
+	
+	<!--loading,error state-->
+	<s:VGroup width="100%"
+			  height="100%"
+			  includeIn="loading,error"
+			  verticalCenter="0"
+			  horizontalCenter="0"
+			  verticalAlign="middle"
+			  horizontalAlign="center">
+		<loadingAndErrorMessage:LoadingAndErrorMessageComponent id="loadingMessage"
+																message="Loading content..."
+																includeIn="loading"/>
+		<loadingAndErrorMessage:LoadingAndErrorMessageComponent id="errorMessage"
+																message="Error loading content..."
+																includeIn="error"/>
+	</s:VGroup>
+	
+	
+	<s:VGroup width="100%"
+			  height="100%"
+			  includeIn="complete">
+
+		<s:List id="list"
+				width="100%"
+				height="100%"
+				itemRenderer="com.squidzoo.friendify.itemrenderers.album.PhotoInGridItemRenderer"
+				dataProvider="{_photos}"
+				contentBackgroundAlpha="0"
+				useVirtualLayout="false"
+				horizontalScrollPolicy="{_horizontalScrollPolicy}"
+				verticalScrollPolicy="{_vertScrollPolicy}"
+				layout="{tileLayout}">
+
+		</s:List>
+
+	</s:VGroup>
+</s:View>

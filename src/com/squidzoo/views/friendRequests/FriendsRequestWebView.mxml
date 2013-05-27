@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				 xmlns:s="library://ns.adobe.com/flex/spark" xmlns:components="spark.components.*" title="Friend Requests"
+				 viewActivate="onViewActivate()">
+	
+	<fx:Script>
+		<![CDATA[
+			private function onViewActivate():void{
+					
+				var webView:StageWebView = new StageWebView();
+				
+				webView = new StageWebView();
+				webView.stage = this.stage;
+			
+				webView.loadURL("http://m.facebook.com/friends.php");
+				webView.viewPort = new Rectangle(0,70,stage.stageWidth,stage.stageHeight-70-70);
+				
+			}
+		]]>
+	</fx:Script>
+</s:View>

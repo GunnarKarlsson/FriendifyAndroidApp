@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+					  xmlns:s="library://ns.adobe.com/flex/spark"
+					  width="300"
+					  height="60"
+					  contentBackgroundAlpha="0"
+					  backgroundAlpha="0">
+
+	<fx:Script>
+		<![CDATA[
+			import com.squidzoo.VOs.CommentVO;
+			import com.squidzoo.VOs.NewsFeedVO;
+
+			import com.squidzoo.eventSystem.EventCentral;
+
+			import com.squidzoo.services.FBService;
+
+			[Bindable]
+			private var _dataObject:CommentVO;
+
+			public function set dataObject(value:CommentVO):void
+			{
+				_dataObject=value as CommentVO;
+
+				likesCount.text=_dataObject.likes == 0 ? "" : _dataObject.likes + ' likes';
+
+				if (likesCount.text.charAt(0) == "1")
+				{
+					likesCount.text="1 like";
+				}
+
+				if (_dataObject.likes == 0)
+				{
+					likeIcon.visible=false;
+					likeIcon.includeInLayout=false;
+				}
+			}
+		]]>
+	</fx:Script>
+
+	<s:HGroup paddingBottom="0"
+			  paddingLeft="0"
+			  paddingRight="0"
+			  paddingTop="0"
+			  verticalAlign="middle">
+		<s:Image id="likeIcon"
+				 source="@Embed('assets/images/icons/metalLike001.png')"/>
+		<s:Label id="likesCount"
+				 styleName="bodyTextBlack"/>
+	</s:HGroup>
+
+</s:SkinnableContainer>

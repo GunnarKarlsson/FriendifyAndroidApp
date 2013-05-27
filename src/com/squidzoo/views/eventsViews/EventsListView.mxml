@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<customComponents:CustomView xmlns:fx="http://ns.adobe.com/mxml/2009"
+							 xmlns:s="library://ns.adobe.com/flex/spark"
+							 xmlns:customComponents="com.squidzoo.friendify.customComponents.*"
+							 title="Events"
+							 destructionPolicy="never"
+							 viewActivate="onViewActivate()"
+							 viewDeactivate="onViewDeactivate()"
+							 currentState="loading"
+							 xmlns:loadingAndErrorMessage="com.squidzoo.friendify.customComponents.loadingAndErrorMessage.*">
+	<customComponents:states>
+		<s:State name="loading"/>
+		<s:State name="error"/>
+		<s:State name="complete"/>
+	</customComponents:states>
+
+	<fx:Script>
+		<![CDATA[
+			import com.squidzoo.eventSystem.EventCentral;
+			import com.squidzoo.eventSystem.events.CustomDataEvent;
+			import com.squidzoo.eventSystem.events.CustomEvent;
+
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+
+			import com.squidzoo.services.FBService;
+
+			private var _service:FBService=new FBService();
+
+			[Bindable]
+			private var _events:ArrayCollection=new ArrayCollection();
+
+			private function onViewActivate():void
+			{
+				_service.addEventListener(FBService.GET_EVENTS_ERROR, onError);
+				_service.addEventListener(FBService.GET_EVENTS_SUCCESS, onSuccess);
+				_service.getEvents();
+			}
+
+			override protected function onViewDeactivate():void
+			{
+				super.onViewDeactivate();
+				_service.removeEventListener(FBService.GET_EVENTS_ERROR, onError);
+				_service.removeEventListener(FBService.GET_EVENTS_SUCCESS, onSuccess);
+				if (list && list.hasEventListener(MouseEvent.CLICK))
+				{
+					list.removeEventListener(MouseEvent.CLICK, onClickList);
+				}
+			}
+
+			private function onError(event:Event):void
+			{
+				currentState="error";
+			}
+
+			private function onSuccess(event:Event):void
+			{
+				_events=_service.events;
+				currentState="complete";
+			}
+
+			private function onClickList():void
+			{
+
+				EventCentral.getInstance().dispatchEvent(new CustomDataEvent(CustomDataEvent.PUSH_SINGLE_EVENT_VIEW, null, list.selectedItem));
+			}
+		]]>
+	</fx:Script>
+
+	<!--loading,error state-->
+	<s:VGroup width="100%"
+			  height="100%"
+			  includeIn="loading,error"
+			  verticalCenter="0"
+			  horizontalCenter="0"
+			  verticalAlign="middle"
+			  horizontalAlign="center">
+		<loadingAndErrorMessage:LoadingAndErrorMessageComponent id="loadingMessage"
+																message="Loading content..."
+																includeIn="loading"/>
+		<loadingAndErrorMessage:LoadingAndErrorMessageComponent id="errorMessage"
+																message="Error loading content..."
+																includeIn="error"/>
+	</s:VGroup>
+
+	<s:VGroup width="100%"
+			  height="100%">
+		<s:List id="list"
+				includeIn="complete"
+				width="100%"
+				height="100%"
+				dataProvider="{_events}"
+				itemRenderer="com.squidzoo.friendify.itemrenderers.EventItemRenderer"
+				contentBackgroundAlpha="0"
+				click="onClickList()"/>
+	</s:VGroup>
+</customComponents:CustomView>

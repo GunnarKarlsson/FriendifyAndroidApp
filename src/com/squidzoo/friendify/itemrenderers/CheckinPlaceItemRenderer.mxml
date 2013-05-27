@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" width="100%" height="100%"
+				autoDrawBackground="false"
+				contentBackgroundAlpha="0" xmlns:customComponents="com.squidzoo.friendify.customComponents.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.facebook.graph.FacebookMobile;
+			
+			import mx.core.FlexGlobals;
+			
+			import spark.core.ContentCache;
+			
+			[Bindable]
+			private var _cache:ContentCache = FlexGlobals.topLevelApplication.imageCache;
+			
+			override public function set data(value:Object):void{
+				super.data = value;
+				locationName.text = data.name;
+				locationCategory.text = data.category;
+				thumbnail.source = FacebookMobile.getImageUrl(value.id);				
+			}
+		]]>
+	</fx:Script>	
+	
+<customComponents:PortraitFrame id="portraitFrame"/>
+	
+	<s:Image id="thumbnail"
+			 x="{portraitFrame.x+5}"
+			 y="{portraitFrame.y+5}"
+			 maxWidth="100"
+			 maxHeight="100"
+			 enableLoadingState="true"
+			 contentLoader="{_cache}"
+			 backgroundColor="#999999"/>
+	
+	<s:HGroup x="{portraitFrame.x + portraitFrame.width}"
+			  width="100%"
+			  height="100%"
+			  paddingBottom="20"
+			  paddingLeft="0"
+			  paddingRight="20"
+			  paddingTop="10">
+		<s:SkinnableContainer id="outerBox"
+							  skinClass="com.squidzoo.friendify.itemrenderers.newsFeedItemRenderer.skins.NewsFeedSkin"
+							  width="100%"
+							  height="100%">
+			
+			<s:VGroup width="100%"
+					  height="100%"
+					  paddingBottom="5"
+					  paddingLeft="5"
+					  paddingRight="5"
+					  paddingTop="5"
+					  gap="0">
+				
+				<s:SkinnableContainer id="topInnerBox"
+									  skinClass="com.squidzoo.friendify.itemrenderers.newsFeedItemRenderer.skins.TopBox"
+									  width="100%"
+									  height="100%">
+					<s:VGroup width="100%"
+							  height="100%"
+							  paddingBottom="10"
+							  paddingLeft="10"
+							  paddingRight="10"
+							  paddingTop="10">
+						
+						<s:RichEditableText id="locationName"
+											selectable="false"
+											editable="false"
+											multiline="true"
+											width="100%"
+											styleName="headerText"/>
+					
+					</s:VGroup>
+				</s:SkinnableContainer>
+				
+				<s:SkinnableContainer id="middleBox"
+									  width="100%"
+									  height="100%"
+									  skinClass="com.squidzoo.friendify.itemrenderers.newsFeedItemRenderer.skins.MiddleBox">
+					<s:VGroup width="100%"
+							  height="100%"
+							  paddingLeft="10"
+							  paddingRight="10"
+							  paddingTop="10"
+							  paddingBottom="10">
+						
+						<s:RichEditableText id="locationCategory"
+											selectable="false"
+											editable="false"
+											multiline="true"
+											styleName="bodyText"
+											width="100%"/>
+					
+					</s:VGroup>
+				</s:SkinnableContainer>
+				
+			</s:VGroup>
+		</s:SkinnableContainer>
+		
+	</s:HGroup>
+	
+</s:ItemRenderer>

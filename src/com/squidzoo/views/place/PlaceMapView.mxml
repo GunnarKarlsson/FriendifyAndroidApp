@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<customComponents:CustomView xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							 xmlns:s="library://ns.adobe.com/flex/spark" xmlns:customComponents="com.squidzoo.friendify.customComponents.*" 
+		title="Place Map" 
+		viewActivate="onViewActivate()"
+		viewDeactivate="onViewDeactivate()"
+		>
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import com.squidzoo.services.FBService;
+			
+			import spark.events.ViewNavigatorEvent;
+			
+			private var myWebView:StageWebView;
+			
+			private var _placeId:String;
+			
+			private var _latitude:String;
+			private var _longitude:String;
+			
+			private var _service:FBService=new FBService();
+			
+			private function onViewActivate():void
+			{
+				_placeId=data.id;
+				
+				if (_service.placeCache[_placeId]==null || _service.placeCache[_placeId]==undefined)
+				{
+					_service.addEventListener(FBService.GET_PLACE_SUCCESS, onGetPlaceSuccess);
+					_service.addEventListener(FBService.GET_PLACE_ERROR, onGetPlaceError);
+					
+					_service.getPlace(_placeId);
+				}
+				else
+				{
+					_latitude=_service.placeCache[_placeId].location.latitude;
+					_longitude=_service.placeCache[_placeId].location.longitude;
+					getMap();
+				}
+				
+			}
+			
+			override protected function onViewDeactivate():void
+			{
+				super.onViewDeactivate();
+				
+				if(myWebView){
+					myWebView.viewPort = null;
+					myWebView.stage = null;
+				}
+				
+				if(_service.hasEventListener(FBService.GET_PLACE_SUCCESS)){
+					_service.removeEventListener(FBService.GET_PLACE_SUCCESS, onGetPlaceSuccess);
+				}
+				if(_service.hasEventListener(FBService.GET_PLACE_ERROR)){
+					_service.removeEventListener(FBService.GET_PLACE_ERROR, onGetPlaceError);
+				}
+				
+				if(FlexGlobals.topLevelApplication.hasEventListener(KeyboardEvent.KEY_DOWN)){
+					FlexGlobals.topLevelApplication.removeEventListener(KeyboardEvent.KEY_DOWN,onKeyDown);
+				}
+			}
+			
+			private function onGetPlaceSuccess(event:Event):void
+			{
+				_service.removeEventListener(FBService.GET_PLACE_SUCCESS, onGetPlaceSuccess);
+				_service.removeEventListener(FBService.GET_PLACE_ERROR, onGetPlaceError);
+				
+				var place:Object=_service.place;
+				trace(place.name);
+				
+				_latitude=String(place.location.latitude);
+				_longitude=String(place.location.longitude);
+				
+				_service.placeCache[_placeId]=place;
+				
+				getMap();
+			}
+			
+			private function getMap():void{
+				myWebView = new StageWebView();
+				myWebView.stage = this.stage;
+				var placeUrl:String = "http://maps.google.com?t=h&q=loc:"+_latitude+","+_longitude+"&z=18";
+				myWebView.loadURL(placeUrl);
+				myWebView.viewPort = new Rectangle(0,70,stage.stageWidth,stage.stageHeight-70-70);
+				
+				FlexGlobals.topLevelApplication.addEventListener(KeyboardEvent.KEY_DOWN,onKeyDown);
+			}
+			
+			private function onGetPlaceError(event:Event):void
+			{
+			}
+			
+			private function onKeyDown(event:KeyboardEvent):void{
+				FlexGlobals.topLevelApplication.removeEventListener(KeyboardEvent.KEY_DOWN,onKeyDown);
+				switch(event.keyCode){
+					case Keyboard.BACK:
+						myWebView.viewPort = null;
+						myWebView.stage = null;
+						break;
+				}
+			}
+			
+			/** 
+			 * Just override to re-scale due to auto-orientation enabled
+			 * */
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void {	
+				if (myWebView) {
+					var point:Point = localToGlobal(new Point());
+					myWebView.viewPort = new Rectangle(point.x, point.y, unscaledWidth, unscaledHeight);
+				}
+			}	
+			
+		]]>
+	</fx:Script>
+</customComponents:CustomView>

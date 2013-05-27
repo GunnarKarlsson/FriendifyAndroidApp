@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" title="Messages"
+		viewActivate="onViewActivate()"
+		viewDeactivate="onViewDeactivate()"
+		currentState="loading"
+		destructionPolicy="never" xmlns:loadingAndErrorMessage="com.squidzoo.friendify.customComponents.loadingAndErrorMessage.*">
+	
+	<s:states>
+		<s:State name="loading"/>
+		<s:State name="error"/>
+		<s:State name="complete"/>
+	</s:states>
+	<fx:Script>
+		<![CDATA[
+			import assets.GraphicAssetFactory;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.UIComponent;
+			
+			import com.squidzoo.services.FBService;
+			
+			import spark.events.PopUpEvent;
+			
+			private var service:FBService = new FBService();
+			
+			
+			[Bindable]private var _messages:ArrayCollection = new ArrayCollection();
+			
+			private function onViewActivate():void{
+				service.addEventListener(FBService.GET_MESSAGES_SUCCESS,onGetMessagesSuccess);
+				service.addEventListener(FBService.GET_MESSAGES_ERROR, onGetMessagesError);
+				service.getMessages();
+			}
+			
+			private function onViewDeactivate():void{
+				if(service.hasEventListener(FBService.GET_MESSAGES_SUCCESS)){
+					service.removeEventListener(FBService.GET_MESSAGES_SUCCESS,onGetMessagesSuccess);
+				}
+				if(service.hasEventListener(FBService.GET_MESSAGES_ERROR)){					
+					service.removeEventListener(FBService.GET_MESSAGES_ERROR, onGetMessagesError);
+				}
+				if(list && list.hasEventListener(MouseEvent.CLICK)){
+					list.removeEventListener(MouseEvent.CLICK,onClickList);
+				}
+			}
+			
+			private function onGetMessagesSuccess(event:Event):void
+			{
+				service.removeEventListener(FBService.GET_MESSAGES_SUCCESS,onGetMessagesSuccess);
+				service.removeEventListener(FBService.GET_MESSAGES_ERROR, onGetMessagesError);
+				_messages = service.messages;
+				currentState="complete"
+			}
+			
+			private function onGetMessagesError(event:Event):void
+			{
+				service.removeEventListener(FBService.GET_MESSAGES_SUCCESS,onGetMessagesSuccess);
+				service.removeEventListener(FBService.GET_MESSAGES_ERROR, onGetMessagesError);
+				currentState = "error";	
+			}
+			
+			private function onClickList():void{
+				navigator.pushView(MessageThreadView,list.selectedItem);	
+			}
+			
+		]]>
+	</fx:Script>	
+	
+	<!--loading,error state-->
+	<s:VGroup width="100%"
+			  height="100%"
+			  includeIn="loading,error"
+			  verticalCenter="0"
+			  horizontalCenter="0"
+			  verticalAlign="middle"
+			  horizontalAlign="center">
+		<loadingAndErrorMessage:LoadingAndErrorMessageComponent id="loadingMessage"
+																message="Loading content..."
+																includeIn="loading"/>
+		<loadingAndErrorMessage:LoadingAndErrorMessageComponent id="errorMessage"
+																message="Error loading content..."
+																includeIn="error"/>
+	</s:VGroup>
+	
+	<s:VGroup width="100%" height="100%" includeIn="complete">
+		<s:List id="list" dataProvider="{_messages}" itemRenderer="com.squidzoo.friendify.itemrenderers.MessageItemRenderer"
+				useVirtualLayout="false"
+				width="100%" height="100%"
+				contentBackgroundAlpha="0"
+				click="onClickList()">
+			<s:layout>
+				<s:VerticalLayout/>
+			</s:layout>
+		</s:List>
+	</s:VGroup>
+	
+</s:View>

@@ -73,7 +73,6 @@ package com.facebook.graph.windows {
 		 *
 		 */
 		public function MobileLoginWindow(loginCallback:Function) {
-			trace("MobileLoginWindow constructor");
 			this.loginCallback = loginCallback;
 			super();
 		}
@@ -91,23 +90,7 @@ package com.facebook.graph.windows {
 		 * @see http://developers.facebook.com/docs/guides/mobile/ 
 		 *
 		 */
-		/*
-		public function open(applicationId:String,
-							 webView:StageWebView,
-							 extendedPermissions:Array = null, 
-							 display:String='touch'
-		):void {
-			trace("MobileLoginWindow open");
-			this.webView = webView;
-
-			loginRequest = new URLRequest();
-			loginRequest.method = URLRequestMethod.GET;
-			//loginRequest.url = FacebookURLDefaults.AUTH_URL +"?"+ formatData(applicationId, display, extendedPermissions);
-			loginRequest.url = FacebookURLDefaults.AUTH_URL + "?" +"type=user%5Fagent&display=touch&scope=read%5Fstream&client%5Fid="+applicationId+"&redirect%5Furi="+FacebookURLDefaults.LOGIN_SUCCESS_URL;
-			trace(loginRequest.url);
-			showWindow(loginRequest);
-		}
-		*/
+	
 		public function open(applicationId:String,
 							 webView:StageWebView,
 							 extendedPermissions:Array = null, 
@@ -124,8 +107,6 @@ package com.facebook.graph.windows {
 		}
 
 		protected function showWindow(req:URLRequest):void {
-			trace("MobileLoginWindow showWindow");
-			//webView.viewPort = new Rectangle(0,0,webView.stage.width,webView.stage.height);//i added this for testing together with passing in new stagwebview
 			
 			webView.addEventListener(
 				Event.COMPLETE,
@@ -154,7 +135,6 @@ package com.facebook.graph.windows {
 									  display:String,
 									  extendedPermissions:Array = null									  
 		):URLVariables {
-			trace("MobileLoginWindow formatData");
 			var vars:URLVariables = new URLVariables();
 			vars.type = 'user_agent';
 			vars.display = display;
@@ -171,12 +151,10 @@ package com.facebook.graph.windows {
 
 		protected function handleLocationChange(event:Event):void
 		{
-			trace("MobileLoginWindow handleLocationChange");
 			var location:String = webView.location;
-			//apparently never enters these conditionals whether login works or not
+
 			if (location.indexOf(FacebookURLDefaults.LOGIN_FAIL_URL) == 0 || location.indexOf(FacebookURLDefaults.LOGIN_FAIL_SECUREURL) == 0)
 			{
-				("t1");
 				webView.removeEventListener(Event.COMPLETE, handleLocationChange);
 				webView.removeEventListener(LocationChangeEvent.LOCATION_CHANGE, handleLocationChange);
 				loginCallback(null, FacebookDataUtils.getURLVariables(location).error_reason);
@@ -187,7 +165,6 @@ package com.facebook.graph.windows {
 
 			else if (location.indexOf(FacebookURLDefaults.LOGIN_SUCCESS_URL) == 0 || location.indexOf(FacebookURLDefaults.LOGIN_SUCCESS_SECUREURL) == 0)
 			{
-				("t2");
 				webView.removeEventListener(Event.COMPLETE, handleLocationChange);
 				webView.removeEventListener(LocationChangeEvent.LOCATION_CHANGE, handleLocationChange);
 				loginCallback(FacebookDataUtils.getURLVariables(location), null);

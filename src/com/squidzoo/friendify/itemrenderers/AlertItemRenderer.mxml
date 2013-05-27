@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:IconItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
+					xmlns:s="library://ns.adobe.com/flex/spark"
+					labelFunction="getLabel"
+					messageFunction="getMessage"
+					iconFunction="getIcon"
+					iconWidth="30"
+					iconHeight="30"
+					messageStyleName="myFontStyle"
+					color="#ffffff" xmlns:loadingAndErrorMessage="com.squidzoo.friendify.customComponents.loadingAndErrorMessage.*">
+	
+	<fx:Style>
+		.myFontStyle { 
+			color: #ffffFF;
+			fontSize: 14;
+		}
+		
+	</fx:Style>
+
+	<fx:Script>
+		<![CDATA[
+			
+			public function getLabel(item:Object):String
+			{
+				return item.label;
+			}
+
+			public function getMessage(item:Object):String
+			{
+				return item.message;
+			}
+
+			public function getIcon(item:Object):String
+			{
+				return item.icon;
+			}
+			
+			override protected function drawBackground(unscaledWidth:Number, unscaledHeight:Number):void
+			{
+			
+				this.graphics.beginFill(0x000000,0.8);
+				this.graphics.drawRect(0,0,unscaledWidth,unscaledHeight);
+				this.graphics.endFill();
+				
+			}		
+		
+		]]>
+	</fx:Script>
+														
+	
+</s:IconItemRenderer>

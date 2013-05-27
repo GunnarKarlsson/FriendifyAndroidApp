@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		title="Upload Photo"
+		xmlns:customComponents="com.squidzoo.friendify.customComponents.*"
+		currentState="selection"
+		viewActivate="onViewActivate(event)">
+
+	<s:states>
+		<s:State name="selection"/>
+		<s:State name="upload"/>
+	</s:states>
+
+	<fx:Script>
+		<![CDATA[
+			import com.facebook.graph.FacebookMobile;
+			
+			import com.squidzoo.services.GalleryBrowser;
+			import com.squidzoo.services.PhotoTaker;
+
+			private var _gallery:GalleryBrowser=new GalleryBrowser();
+			private var _photoTaker:PhotoTaker=new PhotoTaker();
+			private var _fileReference:FileReference;
+			[Bindable]
+			private var _selectedImage:Bitmap;
+			private var _camera:CameraUI;
+			private var _message:String;
+			
+			private var _fileName:String;
+			private var _bytesInFile:int;
+			private var _bytesLoaded:int;
+
+			private function onViewActivate(event:Event):void
+			{
+			}
+
+			private function onChooseFromGallery():void
+			{
+				_gallery.addEventListener(GalleryBrowser.ACCESS_CAMERA_ROLL_ERROR, onGalleryError);
+				_gallery.addEventListener(GalleryBrowser.CHOOSE_FILE_ERROR, onGalleryError);
+				_gallery.addEventListener(GalleryBrowser.IMAGE_SELECTION_SUCCESS, onGalleryImageSelectionSuccess);
+				_gallery.browse();
+			}
+
+			private function onGalleryError(event:Event):void
+			{
+				removeGalleryEventListeners();
+				eventMessagesToUser.text=event.type.toString();
+			}
+
+			private function onGalleryImageSelectionSuccess(event:Event):void
+			{
+				removeGalleryEventListeners();
+				_fileReference=_gallery.fileReference;
+				_selectedImage=_gallery.selectedImage;
+				_fileName=_fileReference.name;
+				progressBar.reset();
+				progressBar.visible = false;
+				progressBar.includeInLayout = false;
+				
+				eventMessagesToUser.visible = false;
+				eventMessagesToUser.includeInLayout = false;
+				//currentState="upload";
+			}
+
+			private function removeGalleryEventListeners():void
+			{
+				_gallery.removeEventListener(GalleryBrowser.ACCESS_CAMERA_ROLL_ERROR, onGalleryError);
+				_gallery.removeEventListener(GalleryBrowser.CHOOSE_FILE_ERROR, onGalleryError);
+				_gallery.removeEventListener(GalleryBrowser.IMAGE_SELECTION_SUCCESS, onGalleryImageSelectionSuccess);
+			}
+
+			private function onClickTakePhoto():void
+			{
+				_photoTaker.addEventListener(PhotoTaker.TAKE_PHOTO_SUCCESS, onTakePhotoSuccess);
+				_photoTaker.takePhoto();
+			}
+
+			private function onTakePhotoSuccess(evt:Event):void
+			{
+				_photoTaker.removeEventListener(PhotoTaker.TAKE_PHOTO_SUCCESS, onTakePhotoSuccess);
+
+				_fileReference=_photoTaker.fileReference;
+				_selectedImage=_photoTaker.selectedImage;
+				_fileName=_fileReference.name;
+				progressBar.reset();
+				progressBar.visible = false;
+				progressBar.includeInLayout = false;
+				
+				eventMessagesToUser.visible = false;
+				eventMessagesToUser.includeInLayout = false;
+				//currentState ="upload";
+			}
+
+			private function onPost():void
+			{
+				if(_fileReference!=null){
+					progressBar.includeInLayout = true;
+					progressBar.visible=true;
+					
+					eventMessagesToUser.includeInLayout = true;
+					eventMessagesToUser.visible = true;
+					
+					var img:*=_fileReference;
+					_bytesInFile=_fileReference.size;
+					_fileReference.addEventListener(DataEvent.UPLOAD_COMPLETE_DATA, onUploadDataComplete);
+					_fileReference.addEventListener(ProgressEvent.PROGRESS, onProgressEvent);
+					var params:Object={message: _message, fileName: _fileName, image: img};
+
+					FacebookMobile.api('/me/photos', handleUploadComplete, params, 'POST');
+				}
+			}
+
+			private function onProgressEvent(event:ProgressEvent):void
+			{
+				_bytesLoaded=event.bytesLoaded;
+				eventMessagesToUser.text="Upload in progress";
+				var uploadPercentage:Number=(_bytesLoaded / _bytesInFile) * 100;
+				progressBar.update(uploadPercentage);
+			}
+
+			private function onUploadDataComplete(event:DataEvent):void
+			{
+			}
+
+			private function handleUploadComplete(response:Object, fail:Object):void
+			{
+				eventMessagesToUser.text=(response) ? 'Successfully uploaded' : 'Error uploading';
+			}
+
+			private function onChangeMessage():void
+			{
+				_message=messageText.text;
+			}
+		
+		]]>
+	</fx:Script>
+	<s:Scroller width="100%"
+				height="100%">
+		<s:VGroup width="100%"
+				  height="100%"
+				  horizontalCenter="0"
+				  paddingBottom="20"
+				  paddingLeft="20"
+				  paddingRight="20"
+				  paddingTop="20"
+				  horizontalAlign="center"
+				  verticalAlign="top"
+				  gap="10">
+			<s:HGroup horizontalAlign="center"
+					  width="100%">
+				<s:Button id="galleryButton" label="From Gallery" width="100%"
+						  click="onChooseFromGallery()"/>
+				<s:Button label="New photo" width="100%"
+						  click="onClickTakePhoto()"
+						  height="{galleryButton.height}"/>
+			</s:HGroup>
+
+			<s:SkinnableContainer id="outerBox"
+								  skinClass="com.squidzoo.friendify.itemrenderers.newsFeedItemRenderer.skins.CommentsHeaderOuterSkin"
+								  width="100%"
+								  
+								  >
+				<s:VGroup width="100%"
+						  height="100%"
+						  paddingBottom="5"
+						  paddingLeft="5"
+						  paddingRight="5"
+						  paddingTop="5"
+						  gap="0">
+					<s:SkinnableContainer id="topInnerBox"
+										  skinClass="com.squidzoo.friendify.itemrenderers.newsFeedItemRenderer.skins.TopBox"
+										  width="100%"
+										  height="100%">
+						<s:VGroup width="100%"
+								  height="100%"
+								  paddingBottom="10"
+								  paddingLeft="10"
+								  paddingRight="10"
+								  paddingTop="10"
+								  gap="5"
+								  horizontalAlign="center">
+
+							<s:Image id="selectedImageDisplay"
+									 width="200"
+									 height="200"
+									 source="{_selectedImage}"
+									 enableLoadingState="true"
+									 />
+							<s:Label id="eventMessagesToUser" visible="false" includeInLayout="false"/>
+							<customComponents:ProgressBar id="progressBar"
+													width="200"
+													visible="false"
+													includeInLayout="false"/>
+							<s:TextArea id="messageText"
+										prompt="image caption"
+										width="100%"
+										selectable="true"
+										editable="true"
+										change="onChangeMessage()"
+										skinClass="spark.skins.mobile.TextAreaSkin"/>
+						</s:VGroup>
+					</s:SkinnableContainer>
+				</s:VGroup>
+			</s:SkinnableContainer>
+			
+			<s:Button label="Post"
+					  click="onPost()"
+					  width="100%"
+					 
+					  />
+		</s:VGroup>
+	</s:Scroller>
+</s:View>

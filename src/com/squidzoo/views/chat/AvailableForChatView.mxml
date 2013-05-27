@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" title="ChatView"
+		creationComplete="onCreationComplete()" destructionPolicy="never"
+		currentState="loading" xmlns:loadingAndErrorMessage="com.squidzoo.friendify.customComponents.loadingAndErrorMessage.*">
+	
+	<s:states>
+		<s:State name="loading"/>
+		<s:State name="complete"/>
+		<s:State name="error"/>
+	</s:states>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.squidzoo.VOs.ChatMessageVO;
+			import com.squidzoo.VOs.ChatPresenceVO;
+			import com.squidzoo.VOs.RosterVO;
+			
+			import assets.GraphicAssetFactory;
+			
+			import com.facebook.graph.FacebookMobile;
+			import com.facebook.graph.data.FacebookSession;
+			import com.hurlant.crypto.prng.Random;
+			import com.hurlant.crypto.tls.TLSConfig;
+			import com.hurlant.crypto.tls.TLSEngine;
+			import com.squidzoo.friendify.RandomUtils;
+			
+			import mx.collections.ArrayCollection;
+			import mx.messaging.events.MessageEvent;
+			
+			import org.igniterealtime.xiff.auth.XFacebookPlatform;
+			import org.igniterealtime.xiff.core.EscapedJID;
+			import org.igniterealtime.xiff.core.XMPPConnection;
+			import org.igniterealtime.xiff.core.XMPPTLSConnection;
+			import org.igniterealtime.xiff.data.Message;
+			import org.igniterealtime.xiff.data.Presence;
+			import org.igniterealtime.xiff.data.XMPPStanza;
+			import org.igniterealtime.xiff.events.ConnectionSuccessEvent;
+			import org.igniterealtime.xiff.events.DisconnectionEvent;
+			import org.igniterealtime.xiff.events.IncomingDataEvent;
+			import org.igniterealtime.xiff.events.LoginEvent;
+			import org.igniterealtime.xiff.events.MessageEvent;
+			import org.igniterealtime.xiff.events.OutgoingDataEvent;
+			import org.igniterealtime.xiff.events.PresenceEvent;
+			import org.igniterealtime.xiff.events.RegistrationFieldsEvent;
+			import org.igniterealtime.xiff.events.RegistrationSuccessEvent;
+			import org.igniterealtime.xiff.events.RosterEvent;
+			import org.igniterealtime.xiff.events.XIFFErrorEvent;
+			import org.igniterealtime.xiff.im.Roster;
+			
+			import com.squidzoo.services.FacebookSaslAuth;
+			
+			private var _auth:FacebookSaslAuth;
+			
+			protected var _registrationData:Object = new Object();
+			
+			private var _connection:XMPPTLSConnection;
+			
+			private var _roster:Roster;
+			
+			private var _loggedIn:Boolean = false;
+			
+			private var _messageInput:String = "";
+			
+			private var _currentState:String = "";
+			
+			[Bindable]private var _people:Dictionary = new Dictionary();
+			
+			[Bindable]private var _rosterAC:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]private var _chatMessages:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]private var _availableToChat:ArrayCollection = new ArrayCollection();
+			[Bindable]private var _availableToChatHash:Object = new Object();
+			
+			private var _stageCounter:int = 0;
+			
+			private var _chattingWith:EscapedJID = new EscapedJID("-100003107621287@chat.facebook.com");
+			
+				 private function onCreationComplete():void
+				{	 
+					 title = "Contacting chat service...";
+					 
+					 XMPPConnection.registerSASLMechanism("X-FACEBOOK-PLATFORM",FacebookSaslAuth);
+					 
+					 _registrationData.username = "GunnarHKarlsson@chat.facebook.com";
+					 _registrationData.password = "asdfface";
+					 
+					_connection = new XMPPTLSConnection(); 
+					_connection.server = "chat.facebook.com";
+					_connection.port = 5222;
+					_connection.username = "GunnarHKarlsson@chat.facebook.com";
+					_connection.password = "your_password";
+					addConnectionListeners();
+					addRosterListeners();
+					
+					_auth = new FacebookSaslAuth(_connection);
+					
+					_connection.connect(XMPPConnection.STREAM_TYPE_STANDARD);
+				}
+			
+				private function addConnectionListeners():void{
+					_connection.addEventListener( ConnectionSuccessEvent.CONNECT_SUCCESS, onConnect);
+					_connection.addEventListener( DisconnectionEvent.DISCONNECT, onDisconnect );
+					_connection.addEventListener( LoginEvent.LOGIN, onLogin );
+					_connection.addEventListener( XIFFErrorEvent.XIFF_ERROR, onXIFFError );
+					_connection.addEventListener( OutgoingDataEvent.OUTGOING_DATA, onOutgoingData )
+					_connection.addEventListener( IncomingDataEvent.INCOMING_DATA, onIncomingData );
+					_connection.addEventListener( RegistrationFieldsEvent.REG_FIELDS, onRegistrationFields );
+					_connection.addEventListener( RegistrationSuccessEvent.REGISTRATION_SUCCESS, onRegistrationSuccess );
+					_connection.addEventListener( PresenceEvent.PRESENCE, onPresence );
+					_connection.addEventListener( org.igniterealtime.xiff.events.MessageEvent.MESSAGE, onMessage );
+				}
+			
+				private function addRosterListeners():void{
+					_roster = new Roster(_connection);
+					_roster.addEventListener(RosterEvent.ROSTER_LOADED, onRoster);
+					_roster.addEventListener(RosterEvent.SUBSCRIPTION_DENIAL, onRoster);
+					_roster.addEventListener(RosterEvent.SUBSCRIPTION_REQUEST, onRoster);
+					_roster.addEventListener(RosterEvent.SUBSCRIPTION_REVOCATION, onRoster);
+					_roster.addEventListener(RosterEvent.USER_ADDED, onRoster);
+					_roster.addEventListener(RosterEvent.USER_AVAILABLE, onRoster);
+					_roster.addEventListener(RosterEvent.USER_PRESENCE_UPDATED, onRoster);
+					_roster.addEventListener(RosterEvent.USER_REMOVED, onRoster);
+					_roster.addEventListener(RosterEvent.USER_SUBSCRIPTION_UPDATED, onRoster);
+					_roster.addEventListener(RosterEvent.USER_UNAVAILABLE, onRoster);	
+				}
+			
+			private function onRoster(event:RosterEvent):void
+			{
+				//trace("onRoster. " + event.toString());
+				switch (event.type)
+				{
+					case RosterEvent.ROSTER_LOADED :
+						buildRosterContent();
+						break;
+					case RosterEvent.SUBSCRIPTION_DENIAL :
+						break;
+					case RosterEvent.SUBSCRIPTION_REQUEST :
+						// If the JID is in the roster, accept immediately
+						if (_roster.getPresence(event.jid) != null)
+						{
+							_roster.grantSubscription(event.jid, true);
+						}
+						break;
+					case RosterEvent.SUBSCRIPTION_REVOCATION :
+						break;
+					case RosterEvent.USER_ADDED :
+						_people[event.jid.toString()] = event.data;
+						break;
+					case RosterEvent.USER_AVAILABLE :
+						break;
+					case RosterEvent.USER_PRESENCE_UPDATED :
+						//need to update presence here
+						break;
+					case RosterEvent.USER_REMOVED :
+						//code for this
+						break;
+					case RosterEvent.USER_SUBSCRIPTION_UPDATED :
+						break;
+					case RosterEvent.USER_UNAVAILABLE :
+						//code for this
+						break;
+				}
+			}
+				
+			private function buildRosterContent():void{
+				for (var jid:String in _people)
+				{
+					var vo:RosterVO = new RosterVO(jid);
+					_rosterAC.addItem(vo);
+				}	
+			}
+			
+				private function onConnect(e:ConnectionSuccessEvent):void{
+					title = "Authorizing..."
+				}
+			
+				private function onLogin(e:LoginEvent):void
+				{
+					_loggedIn = true;
+					title = "You are logged in to chat";
+					_currentState = "complete";
+					var presence:Presence = new Presence(null, _connection.jid.escaped, null, null, null, 1);
+					_connection.send(presence)
+				}
+				
+				private function onXIFFError(e:XIFFErrorEvent):void
+				{
+					title = "Error "+ e.errorCode +" connecting to chat service";
+					_currentState = "error";
+				}
+				
+			private function onDisconnect(event:DisconnectionEvent):void
+			{
+				trace("onDisconnect");
+				
+			}
+			
+			private function onOutgoingData(event:OutgoingDataEvent):void
+			{
+				trace("onOutgoingData");
+				trace(event.data.toString());
+				
+			}
+			
+			private function onIncomingData(event:IncomingDataEvent):void
+			{
+				trace("onIncomingData");
+				trace(event.data.toString());
+					
+			}
+			
+			private function onRegistrationFields(event:Event):void
+			{
+				trace("onRegistrationFields");
+			}
+			
+			private function onRegistrationSuccess(event:RegistrationSuccessEvent):void
+			{
+				trace("onRegistrationFields");
+				
+			}
+			
+			private function onPresence(event:PresenceEvent):void
+			{
+			
+				//if the array is longer than zero
+				if(event.data.length > 0){
+					
+					//loop through array
+					for(var i:uint = 0; i <event.data.length; i++){
+						//if type is null
+						if(event.data[i].type == null){
+								//if not in hashmap
+								if(_availableToChatHash[event.data[i].from] == null){
+									//add to ac and hashamp
+									var person:ChatPresenceVO = new ChatPresenceVO(event.data[i].from.toString());
+									
+									_availableToChat.addItemAt(person,0);
+									_availableToChatHash[event.data[i].from] = event.data;
+								}
+								
+						//else if type is unavailable
+						}else if(event.data[i].type == "unavailable"){	
+								//if not in hashmap
+								if(_availableToChatHash[event.data[i].from]==null){
+									//do nothing
+								}else{
+									//else delete from hashmap
+									_availableToChatHash[event.data[i].from] = null;
+									for(var j:int = 0; j < _availableToChat.length;j++){
+										if(_availableToChat[j].id == event.data[i].from){
+											_availableToChat.removeItemAt(j);
+										}
+									}
+								}		
+						}
+					}
+				}
+			
+				
+				var len:uint = event.data.length;
+				for (var k:uint = 0; k < len; ++k)
+				{
+					var presence:Presence = event.data[k] as Presence;
+					switch (presence.type)
+					{
+						case Presence.TYPE_SUBSCRIBE :
+							// Automatically add all those to _roster whom have requested to be our friend.
+							_roster.grantSubscription(presence.from.unescaped, true);
+							break;
+						case Presence.TYPE_SUBSCRIBED :
+							break;
+					}
+				}
+			}
+			
+			//ui
+			
+			private function onTextInputChange(event:Event):void{
+				_messageInput = event.currentTarget.text;
+			}
+			
+			private function onClickSend():void{
+				sendMessage();
+			}
+				
+				
+			private function sendMessage():void{	
+					var messageText:String = _messageInput;
+					_messageInput = "";
+					
+					var messageID:String = RandomUtils.generateRandomString(10);
+					var msg:Message = new Message(_chattingWith,messageID, messageText, null, Message.TYPE_CHAT);
+					
+					_connection.send(msg);
+			}
+			
+			private function onMessage(event:org.igniterealtime.xiff.events.MessageEvent):void
+			{
+				if(event.data.body!=null){
+					var msg:ChatMessageVO = new ChatMessageVO(event.data.from.toString());
+					var date:Date = new Date();
+					msg.time = date.getHours() + ":" + date.getMinutes();
+					msg.body = event.data.body;
+					_chatMessages.addItemAt(msg,0);
+				}
+			}
+			
+			private function onClickAvailableForChatList():void{
+				if(availableForChatList.selectedItem!=null){
+					var dataObject:Object = new Object();
+					dataObject.id = availableForChatList.selectedItem.id;
+					dataObject.name = availableForChatList.selectedItem.name;
+					var contextObject:Object = new Object();
+					contextObject.connection = _connection;
+					navigator.pushView(ChatMessageView,dataObject,contextObject);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+
+	<!--loading,error state-->
+	<s:VGroup width="100%"
+			  height="100%"
+			  includeIn="loading,error"
+			  verticalCenter="0"
+			  horizontalCenter="0"
+			  verticalAlign="middle"
+			  horizontalAlign="center">
+		<loadingAndErrorMessage:LoadingAndErrorMessageComponent id="loadingMessage"
+																message="Loading content..."
+																includeIn="loading"/>
+		<loadingAndErrorMessage:LoadingAndErrorMessageComponent id="errorMessage"
+																message="Error loading content..."
+																includeIn="error"/>
+	</s:VGroup>
+	
+	<s:VGroup 
+		includeIn="complete"
+		width="100%" height="100%">	
+		
+		<s:List id="availableForChatList" 
+				dataProvider="{_availableToChat}"
+				contentBackgroundAlpha="0"
+				itemRenderer="com.squidzoo.friendify.itemrenderers.AvailableToChatItemRenderer"
+				width="100%" height="100%"
+				click="onClickAvailableForChatList()"
+				>
+			<s:layout>
+				<s:VerticalLayout/>
+			</s:layout>
+		</s:List>
+		
+	</s:VGroup>
+	
+</s:View>

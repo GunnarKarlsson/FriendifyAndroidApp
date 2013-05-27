@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="utf-8"?>
+<customComponents:CustomView xmlns:fx="http://ns.adobe.com/mxml/2009"
+							 xmlns:s="library://ns.adobe.com/flex/spark"
+							 xmlns:customComponents="com.squidzoo.friendify.customComponents.*"
+							 title="Place Wall"
+							 viewActivate="onViewActivate()"
+							 viewDeactivate="onViewDeactivate()"
+							 destructionPolicy="never"
+							 xmlns:loadingAndErrorMessage="com.squidzoo.friendify.customComponents.loadingAndErrorMessage.*">
+
+	<customComponents:states>
+		<s:State name="loading"/>
+		<s:State name="complete"/>
+		<s:State name="error"/>
+	</customComponents:states>
+
+	<fx:Script>
+		<![CDATA[
+			import com.facebook.graph.FacebookMobile;
+			import com.squidzoo.friendify.StringUtils.StringUtils;
+			import com.squidzoo.friendify.imageUtils.ImageURLLoader;
+
+			import com.squidzoo.friendify.itemrenderers.AlertItemRenderer;
+			import com.squidzoo.friendify.itemrenderers.HeaderItemRenderer;
+			import com.squidzoo.friendify.itemrenderers.LoadingContentItemRenderer;
+			import com.squidzoo.friendify.itemrenderers.newsFeedItemRenderer.NewsFeedItemRendererWithSpeechBubbleLayout;
+
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+
+			import com.squidzoo.services.FBService;
+
+			import spark.components.IconItemRenderer;
+
+			private var _service:FBService=new FBService();
+			private var _placeId:String;
+			private var _latitude:String;
+			private var _longitude:String;
+			private var _imageUrl:String;
+			private var _loader:ImageURLLoader;
+
+			[Bindable]
+			private var _dp:ArrayCollection=new ArrayCollection();
+
+			private function onViewActivate():void
+			{
+				currentState="loading";
+				_service.addEventListener(FBService.GET_NEEWSFEED_SUCCESS, onGetNewsFeedSuccess);
+				_service.addEventListener(FBService.GET_NEWSFEED_ERROR, onGetNewsFeedError);
+
+				_placeId=data.id;
+
+				if (_service.placeCache[_placeId] == null || _service.placeCache[_placeId] == undefined)
+				{
+					_service.addEventListener(FBService.GET_PLACE_SUCCESS, onGetPlaceSuccess);
+					_service.addEventListener(FBService.GET_PLACE_ERROR, onGetPlaceError);
+
+					_service.getPlace(_placeId);
+				}
+				else
+				{
+					_latitude=_service.placeCache[_placeId].location.latitude;
+					_longitude=_service.placeCache[_placeId].location.longitude;
+					addHeader();
+				}
+			}
+
+			override protected function onViewDeactivate():void
+			{
+				super.onViewDeactivate();
+				
+				if (_service.hasEventListener(FBService.GET_NEEWSFEED_SUCCESS))
+				{
+					_service.removeEventListener(FBService.GET_NEEWSFEED_SUCCESS, onGetNewsFeedSuccess);
+				}
+				if (_service.hasEventListener(FBService.GET_NEWSFEED_ERROR))
+				{
+					_service.removeEventListener(FBService.GET_NEWSFEED_ERROR, onGetNewsFeedError);
+				}
+				if (_service.hasEventListener(FBService.GET_PLACE_SUCCESS))
+				{
+					_service.removeEventListener(FBService.GET_PLACE_SUCCESS, onGetPlaceSuccess);
+				}
+				if (_service.hasEventListener(FBService.GET_PLACE_ERROR))
+				{
+					_service.removeEventListener(FBService.GET_PLACE_ERROR, onGetPlaceError);
+				}
+			}
+
+			private function onGetPlaceSuccess(event:Event):void
+			{
+				_service.removeEventListener(FBService.GET_PLACE_SUCCESS, onGetPlaceSuccess);
+				_service.removeEventListener(FBService.GET_PLACE_ERROR, onGetPlaceError);
+
+				var place:Object=_service.place;
+				_latitude=String(place.location.latitude);
+				_longitude=String(place.location.longitude);
+
+				_service.placeCache[_placeId]=place;
+
+				addHeader();
+			}
+
+			private function addHeader():void
+			{
+				var url:String="http://maps.googleapis.com/maps/api/staticmap?center=" + _latitude + "," + _longitude + "&markers=color:blue|label:" + _service.placeCache[_placeId].name + "|" + _latitude + "," + _longitude + "&zoom=15&size=200x200&maptype=roadmap&sensor=false"; //String(_latitude) + "," + String(_longitude) + "&zoom=12&size=200x200&sensor=false"; 
+				var vo:Object=new Object();
+				vo.type="header";
+				vo.icon=url;
+				vo.name=_service.placeCache[_placeId].name;
+				vo.message=_service.placeCache[_placeId].location.city + ", " + _service.placeCache[_placeId].location.country;
+				_dp.addItem(vo);
+
+				var obj:Object=new Object();
+				obj.type="loading";
+				obj.message="loading wall posts...";
+				_dp.addItem(obj);
+
+				currentState="complete";
+
+				_service.getUserFeed(data.id);
+			}
+
+			private function onGetPlaceError(event:Event):void
+			{
+				currentState="error";
+			}
+
+			private function onLoadComplete(event:Event):void
+			{
+				_service.getUserFeed(data.id);
+				currentState="complete";
+			}
+
+			private function onGetNewsFeedSuccess(event:Event):void
+			{
+				var listitems:ArrayCollection=_service.newsFeed;
+
+				for (var i:uint=0; i < _dp.length; i++)
+				{
+					if (_dp[i].type == "loading")
+					{
+						_dp.removeItemAt(i);
+						list.invalidateDisplayList();
+					}
+				}
+
+				for (var j:uint=0; j < listitems.length; j++)
+				{
+					_dp.addItem(listitems[j]);
+				}
+
+				if (_dp.length < 1)
+				{
+					var item:Object=new Object();
+					item.icon="assets/images/icons/metalAlertSmall001.png";
+					item.label="No wall posts available";
+					item.message="User has no wall posts or has restricted access";
+					_dp.addItem(item);
+					list.itemRenderer=new ClassFactory(AlertItemRenderer);
+
+				}
+
+				currentState="complete";
+			}
+
+			private function onGetNewsFeedError(event:Event):void
+			{
+				trace("newsfeederror");
+				currentState="error";
+			}
+
+			private function itemRendererFunc(item:Object):ClassFactory
+			{
+				var ir:Class=NewsFeedItemRendererWithSpeechBubbleLayout;
+
+				if (item.hasOwnProperty("type"))
+				{
+					switch (item.type)
+					{
+						case "header":
+							ir=HeaderItemRenderer;
+							break;
+						case "loading":
+							ir=LoadingContentItemRenderer;
+							break;
+						default:
+							break;
+					}
+				}
+
+				return new ClassFactory(ir);
+			}
+
+			private function onClickMapImage():void
+			{
+				var vo:Object=new Object();
+				vo.latitude=_latitude;
+				vo.longitude=_longitude;
+				navigator.pushView(PlaceMapView, vo);
+			}
+		]]>
+	</fx:Script>
+
+	<!--loading,error state-->
+	<s:VGroup width="100%"
+			  height="100%"
+			  includeIn="loading,error"
+			  verticalCenter="0"
+			  horizontalCenter="0"
+			  verticalAlign="middle"
+			  horizontalAlign="center">
+		<loadingAndErrorMessage:LoadingAndErrorMessageComponent id="loadingMessage"
+																message="Loading content..."
+																includeIn="loading"/>
+		<loadingAndErrorMessage:LoadingAndErrorMessageComponent id="errorMessage"
+																message="Error loading content..."
+																includeIn="error"/>
+	</s:VGroup>
+
+	<s:VGroup includeIn="complete"
+			  width="100%"
+			  height="100%"
+			  paddingBottom="10"
+			  paddingLeft="10"
+			  paddingRight="10"
+			  paddingTop="10">
+
+		<s:VGroup width="100%"
+				  height="100%"
+				  contentBackgroundAlpha="0">
+			<s:List id="list"
+					width="100%"
+					height="100%"
+					dataProvider="{_dp}"
+					itemRendererFunction="itemRendererFunc"
+					alternatingItemColors="{[0x999999,0x777777]}"
+					useVirtualLayout="false">
+			</s:List>
+		</s:VGroup>
+	</s:VGroup>
+</customComponents:CustomView>

@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		title="Notifications"
+		currentState="loading"
+		viewActivate="onViewActivate()"
+		viewDeactivate="onViewDeactivate()"
+		xmlns:loadingAndErrorMessage="com.squidzoo.friendify.customComponents.loadingAndErrorMessage.*">
+
+	<s:actionContent>
+		<s:Button icon="@Embed('assets/images/icons/metalSettings.png')" click="onClickSettingsButton()"/>
+	</s:actionContent>
+	
+	<s:states>
+		<s:State name="loading"/>
+		<s:State name="error"/>
+		<s:State name="complete"/>
+	</s:states>
+
+	<fx:Script>
+		<![CDATA[
+			import com.facebook.graph.FacebookMobile;
+			import com.squidzoo.eventSystem.EventCentral;
+			import com.squidzoo.eventSystem.events.CustomDataEvent;
+			
+			import com.squidzoo.friendify.itemrenderers.AlertItemRenderer;
+			import com.squidzoo.friendify.itemrenderers.NotificationItemRenderer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			
+			import com.squidzoo.services.FBService;
+			
+			import com.squidzoo.views.SettingsView;
+			import com.squidzoo.views.comments.CommentsView;
+			import com.squidzoo.views.eventsViews.SingleEventView;
+			import com.squidzoo.views.groups.SingleGroupView;
+			import com.squidzoo.views.user.SingleUserView;
+			
+			[Bindable]public var forCompiler:NotificationsView;
+			
+			[Bindable]
+			private var _notifications:ArrayCollection=new ArrayCollection();
+
+			private var _service:FBService=new FBService();
+			
+			private function onDeleteNotification(event:CustomDataEvent):void{
+				var params:Object = new Object();
+				params["unread"]=0;
+				FacebookMobile.api("/"+event.data,handleDelete,params,'POST');
+			}
+			
+			private function handleDelete(success:Object,fail:Object):void{
+								
+				if(success){
+					_service.getNotifications();
+				}
+			
+			private function onClickSettingsButton():void{
+				navigator.pushView(SettingsView);
+			}
+			
+			private function onViewActivate():void
+			{
+				EventCentral.getInstance().addEventListener(CustomDataEvent.NOTIFICATION_IR_CLICKED_VIEW_MORE,onViewMoreClicked);
+				EventCentral.getInstance().addEventListener(CustomDataEvent.DELETE_NOTIFICATION,onDeleteNotification);
+				_service.addEventListener(FBService.GET_NOTIFICATIONS_ERROR, onError);
+				_service.addEventListener(FBService.GET_NOTIFICATIONS_SUCCESS, onSuccess);
+				_service.getNotifications();
+			}
+
+			private function onViewDeactivate():void
+			{
+				EventCentral.getInstance().removeEventListener(CustomDataEvent.NOTIFICATION_IR_CLICKED_VIEW_MORE,onViewMoreClicked);
+				EventCentral.getInstance().removeEventListener(CustomDataEvent.DELETE_NOTIFICATION,onDeleteNotification);
+				_service.removeEventListener(FBService.GET_NOTIFICATIONS_ERROR, onError);
+				_service.removeEventListener(FBService.GET_NOTIFICATIONS_SUCCESS, onSuccess);
+			}
+
+			private function onError(event:Event):void
+			{
+				currentState="error";
+			}
+
+			private function onSuccess(event:Event):void
+			{
+				trace(_service.notifications.length);
+				_notifications.removeAll();
+				_notifications=_service.notifications;
+				currentState="complete";
+
+				if (_notifications.length < 1)
+				{
+					var vo:Object=new Object();
+					vo.label="no notifications are available";
+					_notifications.addItem(vo);
+
+					list.itemRenderer=new ClassFactory(AlertItemRenderer);
+				}
+
+			}
+
+			private function onViewMoreClicked(event:CustomDataEvent):void{
+				var dataObject:Object=new Object();
+				
+				var pattern:RegExp=/\d+/; //one or more numbers
+				var a:Array=pattern.exec(event.dataObject.link) as Array;
+				
+				if(a != null) dataObject.id=a[0]; //source object's id	
+				dataObject.isNotification = true;
+				
+				var type:String = event.dataObject.application["name"];
+			
+				if(type.toLowerCase() == "groups")
+				{
+					handleGroupNotification(dataObject);
+				}
+				else if(type.toLowerCase() == "events")
+				{
+					handleEventNotification(dataObject);
+				}
+				else if(type.toLowerCase() == "friends")
+				{
+					handleFriendsNotification(dataObject);
+				}
+				else if(type.toLowerCase() == "wall")
+				{
+					handleWallNotification(dataObject);
+				}
+				
+				else if(type.toLowerCase() == "facebook for iphone")
+				{
+					handleMobilePost(dataObject);
+				}
+				else if(type.toLowerCase() == "facebook for android")
+				{
+					handleMobilePost(dataObject);	
+				}
+				else if(type.toLowerCase() == "photos")
+				{
+					handlePhotoNotification(dataObject);
+				}
+				else if(type.toLowerCase() == "likes")
+				{
+					handleLikesNotification(dataObject);
+				}
+				else if(type.toLowerCase() == "feed comments")
+				{
+					handleFeedComments(dataObject);
+				}
+				
+				else
+				{
+					handleDefaultCase(dataObject);
+				}
+			}
+			
+			private function handleDefaultCase(dataObject:Object):void{
+				dataObject.type = "feed";
+				FlexGlobals.topLevelApplication.navigator.pushView(CommentsView,dataObject);
+			}
+			
+			private function handleMobilePost(dataObject:Object):void{
+				dataObject.type = "mobile";
+				FlexGlobals.topLevelApplication.navigator.pushView(CommentsView,dataObject);
+			}
+			
+			private function handleWallNotification(dataObject:Object):void{
+				dataObject.type = "wall";			
+				dataObject.id=FacebookMobile.getSession().uid;
+				dataObject.name=FacebookMobile.getSession().user.name;
+				FlexGlobals.topLevelApplication.navigator.pushView(SingleUserView,dataObject);
+			}
+			
+			private function handleLikesNotification(dataObject:Object):void
+			{
+				dataObject.type = "like";
+				FlexGlobals.topLevelApplication.navigator.pushView(CommentsView,dataObject);
+			}
+			
+			private function handleFriendsNotification(dataObject:Object):void
+			{
+				dataObject.type = "friends";
+				FlexGlobals.topLevelApplication.navigator.pushView(SingleUserView,dataObject);
+			}
+
+			private function handleGroupNotification(dataObject:Object):void
+			{
+				var notificationTitle:String=list.selectedItem.title;
+				var index:int=notificationTitle.indexOf("posted in");
+				if (index > -1)
+				{
+					var postedInStr:String="posted in ";
+					var title:String=notificationTitle.substring(index + postedInStr.length, notificationTitle.length - 1);
+					dataObject.name=title;
+				}
+				else
+				{
+					index=notificationTitle.indexOf("added you to the group");
+					if (index > -1)
+					{
+						var addedYouString:String="added you to the group ";
+						var groupTitle:String=notificationTitle.substring(index + addedYouString.length, notificationTitle.length - 1);
+						dataObject.name=groupTitle;
+					}
+				}
+				FlexGlobals.topLevelApplication.navigator.pushView(SingleGroupView,dataObject);
+			}
+
+			private function handleEventNotification(dataObject:Object):void
+			{
+				FlexGlobals.topLevelApplication.navigator.pushView(SingleEventView,dataObject);
+			}
+
+			private function handlePhotoNotification(dataObject:Object):void
+			{
+				dataObject.type = "PhotoVO";
+				FlexGlobals.topLevelApplication.navigator.pushView(CommentsView,dataObject);
+			}
+
+			private function handleFeedComments(dataObject:Object):void
+			{
+				dataObject.type = "feed";
+				FlexGlobals.topLevelApplication.navigator.pushView(CommentsView,dataObject);
+			}
+			
+			private function markNotificationAsRead():void
+			{
+				//Mark notification as 'read' to remove it from list next notification polling
+				var params:Object = new Object();
+				params.unread = false;
+				FacebookMobile.api(list.selectedItem.id+"?unread=false&",handleMarkNotifAsReadResponse,null,'POST');
+			}
+			
+			private function handleMarkNotifAsReadResponse(success:Object,fail:Object):void
+			{
+				if(success){
+					trace("notification was marked read");
+				}else{
+					trace("notification was not marked read ");
+				}
+			}
+			
+		]]>
+	</fx:Script>
+
+	<!--loading,error state-->
+	<s:VGroup width="100%"
+			  height="100%"
+			  includeIn="loading,error"
+			  verticalCenter="0"
+			  horizontalCenter="0"
+			  verticalAlign="middle"
+			  horizontalAlign="center">
+		<loadingAndErrorMessage:LoadingAndErrorMessageComponent id="loadingMessage"
+																message="Loading content..."
+																includeIn="loading"/>
+		<loadingAndErrorMessage:LoadingAndErrorMessageComponent id="errorMessage"
+																message="Error loading content..."
+																includeIn="error"/>
+	</s:VGroup>
+
+	<s:List id="list"
+			includeIn="complete"
+			width="100%"
+			height="100%"
+			dataProvider="{_notifications}"
+			itemRenderer="com.squidzoo.friendify.itemrenderers.NotificationItemRenderer"
+			
+			alternatingItemColors="[#999999,#999999]"
+			contentBackgroundAlpha="0"/>
+
+</s:View>

@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				contentBackgroundAlpha="0"
+				autoDrawBackground="false"
+				width="100%"
+				height="100%"
+				xmlns:customComponents="com.squidzoo.friendify.customComponents.*">
+
+	<fx:Script>
+		<![CDATA[
+			import com.facebook.graph.FacebookMobile;
+			import com.squidzoo.eventSystem.EventCentral;
+			import com.squidzoo.eventSystem.events.CustomDataEvent;
+			
+			import com.squidzoo.friendify.itemrenderers.NotificationItemRenderer;
+			
+			import mx.core.FlexGlobals;
+			
+			import spark.core.ContentCache;
+			
+			import com.squidzoo.utils.FacebookTimeParser;
+			import com.squidzoo.utils.RelativeDate;
+
+			[Bindable]
+			public var _forCompiler:NotificationItemRenderer;
+
+			[Bindable]
+			private var _cache:ContentCache=FlexGlobals.topLevelApplication.imageCache;
+
+			private var _id:String;
+
+			override public function set data(value:Object):void
+			{
+				if (value)
+				{
+					super.data=value;
+					
+					if(value.id)
+					{
+						_id = value.id;
+					}
+					
+					if (value.title)
+					{
+						title.text=value.title;
+					}
+					if (value.createdTimes)
+					{
+						var date:Date=FacebookTimeParser.parseDate(value.createdTimes);
+						time.text=RelativeDate.getRelativeDateFromNow(date, false);
+					}
+					if (value.from)
+					{
+						thumbnail.source=FacebookMobile.getImageUrl(value.from.id);
+					}
+				}
+			}
+			
+			private function onClickDelete():void{
+				EventCentral.getInstance().dispatchEvent(new CustomDataEvent(CustomDataEvent.DELETE_NOTIFICATION,_id));
+			}
+			
+			private function onClickViewDetails():void{
+				EventCentral.getInstance().dispatchEvent(new CustomDataEvent(CustomDataEvent.NOTIFICATION_IR_CLICKED_VIEW_MORE,null,data));
+			}
+		]]>
+	</fx:Script>
+
+	<customComponents:PortraitFrame id="portraitFrame"/>
+
+	<s:Image id="thumbnail"
+			 x="{portraitFrame.x+5}"
+			 y="{portraitFrame.y+5}"
+			 maxWidth="100"
+			 maxHeight="100"
+			 enableLoadingState="true"
+			 contentLoader="{_cache}"
+			 backgroundColor="#999999"/>
+
+	<s:HGroup x="{portraitFrame.x + portraitFrame.width}"
+			  width="100%"
+			  height="100%"
+			  paddingBottom="20"
+			  paddingLeft="0"
+			  paddingRight="20"
+			  paddingTop="10">
+		<s:SkinnableContainer id="outerBox"
+							  skinClass="com.squidzoo.friendify.itemrenderers.newsFeedItemRenderer.skins.NewsFeedSkin"
+							  width="100%"
+							  height="100%">
+
+			<s:VGroup width="100%"
+					  height="100%"
+					  paddingBottom="5"
+					  paddingLeft="5"
+					  paddingRight="5"
+					  paddingTop="5"
+					  gap="0">
+
+				<s:SkinnableContainer id="topInnerBox"
+									  skinClass="com.squidzoo.friendify.itemrenderers.newsFeedItemRenderer.skins.TopBox"
+									  width="100%"
+									  height="100%">
+					<s:VGroup width="100%"
+							  height="100%"
+							  paddingBottom="10"
+							  paddingLeft="10"
+							  paddingRight="10"
+							  paddingTop="10">
+
+						<s:RichEditableText id="title"
+											selectable="false"
+											editable="false"
+											multiline="true"
+											width="100%"
+											styleName="headerText"/>
+					</s:VGroup>
+				</s:SkinnableContainer>
+
+				<s:SkinnableContainer id="middleBox"
+									  width="100%"
+									  height="100%"
+									  skinClass="com.squidzoo.friendify.itemrenderers.newsFeedItemRenderer.skins.MiddleBox">
+					<s:VGroup width="100%"
+							  height="100%"
+							  paddingLeft="10"
+							  paddingRight="10"
+							  paddingTop="10"
+							  paddingBottom="10"
+							  gap="10">
+
+						<s:RichEditableText id="time"
+											selectable="false"
+											editable="false"
+											multiline="true"
+											styleName="bodyTextBlack"
+											width="100%"/>
+						<s:HGroup width="100%" gap="10">
+							<s:Button height="40"
+									  label="View details"
+									  width="100%"
+									  fontSize="18"
+									  click="onClickViewDetails()"
+									  />
+							<s:Button height="40"
+									  label="Remove"
+									  iconPlacement="left"
+									  width="100%"
+									  fontSize="18"
+									  click="onClickDelete()"/>
+						</s:HGroup>
+					</s:VGroup>
+				</s:SkinnableContainer>
+
+			</s:VGroup>
+		</s:SkinnableContainer>
+
+	</s:HGroup>
+</s:ItemRenderer>

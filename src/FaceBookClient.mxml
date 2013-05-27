@@ -24,36 +24,36 @@
 			import com.squidzoo.eventSystem.EventCentral;
 			import com.squidzoo.eventSystem.events.CustomDataEvent;
 			
-			import customComponents.callouts.MainMenuCallout;
+			import com.squidzoo.friendify.customComponents.callouts.MainMenuCallout;
 			
 			import mx.core.FlexGlobals;
 			import mx.core.UIComponent;
 			import mx.events.FlexEvent;
 			
-			import services.Config;
-			import services.NotificationPollService;
+			import com.squidzoo.services.Config;
+			import com.squidzoo.services.NotificationPollService;
 			
 			import spark.events.PopUpEvent;
 			
-			import views.AboutView;
-			import views.MoreAppsView;
-			import views.SettingsView;
-			import views.chat.AvailableForChatView;
-			import views.checkin.CheckinView;
-			import views.eventsViews.EventsView;
-			import views.eventsViews.SingleEventView;
-			import views.friendRequests.FriendsRequestsView;
-			import views.friends.FriendsView;
-			import views.groups.GroupsView;
-			import views.loginLogout.LoginView;
-			import views.mainMenu.MainMenuView;
-			import views.messages.MessagesView;
-			import views.newsfeed.NewsFeedView;
-			import views.notifications.NotificationsView;
-			import views.photos.AlbumsView;
-			import views.photos.PostPhotoView;
-			import views.place.PlaceView;
-			import views.user.SingleUserView;
+			import com.squidzoo.views.AboutView;
+			import com.squidzoo.views.MoreAppsView;
+			import com.squidzoo.views.SettingsView;
+			import com.squidzoo.views.chat.AvailableForChatView;
+			import com.squidzoo.views.checkin.CheckinView;
+			import com.squidzoo.views.eventsViews.EventsView;
+			import com.squidzoo.views.eventsViews.SingleEventView;
+			import com.squidzoo.views.friendRequests.FriendsRequestsView;
+			import com.squidzoo.views.friends.FriendsView;
+			import com.squidzoo.views.groups.GroupsView;
+			import com.squidzoo.views.loginLogout.LoginView;
+			import com.squidzoo.views.mainMenu.MainMenuView;
+			import com.squidzoo.views.messages.MessagesView;
+			import com.squidzoo.views.newsfeed.NewsFeedView;
+			import com.squidzoo.views.notifications.NotificationsView;
+			import com.squidzoo.views.photos.AlbumsView;
+			import com.squidzoo.views.photos.PostPhotoView;
+			import com.squidzoo.views.place.PlaceView;
+			import com.squidzoo.views.user.SingleUserView;
 			
 			public static var isOpeningFromNotificationInStatusBar:Boolean = false;
 			public static var isLoggedIn:Boolean = false;

@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		xmlns:customComponents="com.squidzoo.friendify.customComponents.*"
+		autoDrawBackground="false"
+		contentBackgroundAlpha="0">
+
+
+	<fx:Script>
+		<![CDATA[
+			import com.squidzoo.VOs.CommentVO;
+			
+			import com.facebook.graph.FacebookMobile;
+			import com.squidzoo.friendify.StringUtils.URLValidator;
+			
+			import flashx.textLayout.conversion.TextConverter;
+			import flashx.textLayout.elements.Configuration;
+			import flashx.textLayout.elements.TextFlow;
+			import flashx.textLayout.formats.TextDecoration;
+			import flashx.textLayout.formats.TextLayoutFormat;
+			
+			import com.squidzoo.friendify.helpers.FacebookTime;
+			
+			import mx.core.FlexGlobals;
+			
+			import spark.core.ContentCache;
+
+			private var _commentId:String;
+			private var _from:Object;
+			private var _createdTime:String;
+			private var _userLikes:Boolean;
+
+			private var _offset:int=100;
+
+			[Bindable]
+			private var _contentWidth:int=FlexGlobals.topLevelApplication.stage.stageWidth - _offset;
+
+			[Bindable]
+			private var _imageSource:String;
+
+
+			[Bindable]
+			private var _imageCache:ContentCache=FlexGlobals.topLevelApplication.imageCache;
+
+			[Bindable]public var forCompiler:CommentItemRendererWithSpeechBubble;
+			
+			[Bindable]public var _dataObject:CommentVO;
+			
+			private var _urlValidator:URLValidator = new URLValidator();
+			
+			override public function set data(value:Object):void
+			{
+
+				if (value == null || (data && data.id == value.id))
+				{
+					return;
+				}
+
+				_dataObject = value as CommentVO;
+
+				if (value.id)
+				{
+					_commentId=value.id;
+					if(value.from){						
+						_imageSource=FacebookMobile.getImageUrl(value.from.id);
+					}
+				}
+
+				if (value.from)
+				{
+					_from=value.from;
+					commentName.text=value.from.name;
+				}
+
+				if (value.message)
+				{
+					if(_urlValidator.findValid(value.message)==false){
+						message.text = value.message;
+					}else{
+						var txt:String = _urlValidator.tag(value.message);
+						var config:Configuration=TextFlow.defaultConfiguration;
+						message.textFlow=TextConverter.importToFlow(txt, TextConverter.TEXT_FIELD_HTML_FORMAT);
+					}
+				}
+				if (value.createdTime)
+				{
+					time.text=FacebookTime.getTime(value.createdTime);
+				}
+				
+			}				
+				private function configureLink(config:Configuration):void{
+					var normalFmt: TextLayoutFormat=new TextLayoutFormat(config.defaultLinkNormalFormat);
+					normalFmt.color=0x0000ff;
+					normalFmt.textDecoration=TextDecoration.NONE;
+					
+					var hoverFmt:TextLayoutFormat=new TextLayoutFormat(config.defaultLinkHoverFormat);
+					hoverFmt.color=0x555555;
+					hoverFmt.textDecoration=TextDecoration.UNDERLINE;
+					
+					config.defaultLinkNormalFormat=normalFmt;
+					config.defaultLinkHoverFormat=hoverFmt;
+				}
+		]]>
+	</fx:Script>
+
+
+<customComponents:PortraitFrame id="portraitFrame"/>
+
+	<s:Image id="thumbnail"
+			 x="{portraitFrame.x+5}"
+			 y="{portraitFrame.y+5}"
+			 maxWidth="100"
+			 maxHeight="100"
+			 source="{_imageSource}"/>
+
+	<s:HGroup x="{portraitFrame.x + portraitFrame.width}"
+			  width="100%"
+			  height="100%"
+			  paddingBottom="20"
+			  paddingLeft="0"
+			  paddingRight="20"
+			  paddingTop="10">
+		<s:SkinnableContainer id="outerBox"
+							  width="100%"
+							  height="100%"
+							  skinClass="com.squidzoo.friendify.itemrenderers.newsFeedItemRenderer.skins.NewsFeedSkin">
+
+			<s:VGroup width="100%"
+					  height="100%"
+					  gap="0"
+					  paddingBottom="5"
+					  paddingLeft="5"
+					  paddingRight="5"
+					  paddingTop="5">
+
+				<s:SkinnableContainer id="topInnerBox"
+									  width="100%"
+									  height="100%"
+									  skinClass="com.squidzoo.friendify.itemrenderers.newsFeedItemRenderer.skins.TopBox">
+					<s:VGroup width="100%"
+							  height="100%"
+							  paddingBottom="10"
+							  paddingLeft="10"
+							  paddingRight="10"
+							  paddingTop="10">
+
+						<s:RichEditableText id="commentName"
+											width="100%"
+											editable="false"
+											multiline="true"
+											selectable="false"
+											styleName="headerText"/>
+					</s:VGroup>
+				</s:SkinnableContainer>
+
+				<s:SkinnableContainer id="middleBox"
+									  width="100%"
+									  height="100%"
+									  skinClass="com.squidzoo.friendify.itemrenderers.newsFeedItemRenderer.skins.MiddleBox">
+					<s:VGroup width="100%"
+							  height="100%"
+							  paddingBottom="20"
+							  paddingLeft="10"
+							  paddingRight="10"
+							  paddingTop="10">
+
+						<s:RichEditableText id="message"
+											width="100%"
+											editable="false"
+											multiline="true"
+											selectable="false"
+											styleName="bodyTextBlack"/>
+						<s:RichEditableText id="time"
+											width="100%"
+											editable="false"
+											multiline="true"
+											selectable="false"
+											styleName="timeText"/>
+					</s:VGroup>
+				</s:SkinnableContainer>
+
+				<s:SkinnableContainer id="bottomBox"
+									  width="100%"
+									  height="50"
+									  skinClass="com.squidzoo.friendify.itemrenderers.newsFeedItemRenderer.skins.BottomBox">
+					<s:HGroup paddingBottom="10"
+							  paddingLeft="5"
+							  paddingRight="5"
+							  paddingTop="5">
+						<customComponents:LikeComponentWithLikeButton width="100%" id="actions"
+													 dataObject="{_dataObject}"/>
+					</s:HGroup>
+				</s:SkinnableContainer>
+			</s:VGroup>
+		</s:SkinnableContainer>
+
+	</s:HGroup>
+
+</s:ItemRenderer>

@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+
+API:
+
+code:
+1. Requires binding to an itemrenderer function in parent like so:
+
+private function chooseListItemRenderer(item:Object):ClassFactory{
+	var ir:Class =  NewsFeedItemRenderer;
+
+	switch(item.type){
+		case "loading":
+		ir = LoadingItemRenderer;
+
+		default:
+		break;
+	}
+	return new ClassFactory(ir);
+}
+
+2. Requires call to setPostFeedReceivedState after feed has been received in parent like so:
+
+protected function onGetNewsfeedSuccess(event:Event):void
+{
+	newsfeed=service.newsFeed;
+	list.setPostFeedReceivedState();
+}
+
+packaging:
+1. imports itemrenderers.LoadingItemRenderer.
+
+2. Embeds assets/images/pullDownList/Arrow-double-up-48.png.
+-->
+
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+					  xmlns:s="library://ns.adobe.com/flex/spark"
+					  width="100%"
+					  height="100%"
+					  currentState="normal"
+					  creationComplete="onCComplete(event)"
+					  contentBackgroundAlpha="0" xmlns:styles="com.squidzoo.styles.*" xmlns:loadingAndErrorMessage="com.squidzoo.friendify.customComponents.loadingAndErrorMessage.*">
+
+	<fx:Metadata>
+		[Event(name="loadOlder", type="flash.events.Event")]
+	</fx:Metadata>
+	
+	
+
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="loading"/>
+		<s:State name="pulled"/>
+		<s:State name="pulledUp"/>
+	</s:states>
+
+	<fx:Script>
+		<![CDATA[
+			import com.squidzoo.friendify.itemrenderers.LoadingItemRenderer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import com.squidzoo.services.FBService;
+			
+			import spark.components.supportClasses.ItemRenderer;
+			import spark.core.NavigationUnit;
+
+			[Bindable]
+			private var newsfeed:ArrayCollection=new ArrayCollection();
+			private var service:FBService=new FBService();
+
+			import mx.events.FlexEvent;
+			import mx.events.TouchInteractionEvent;
+			import mx.rpc.events.ResultEvent;
+
+			import spark.components.Scroller;
+			import spark.events.ViewNavigatorEvent;
+
+			private static const SCROLL_POSITION_TRIGGER_REFRESH:int=-80;
+			[Bindable]
+			private var _dp:ArrayCollection=new ArrayCollection();
+
+			[Bindable]
+			private var _getFeed:Function;
+
+			private var _loaderAdded:Boolean=false;
+			
+			private var _previousVScrollValue:Number=Number.NEGATIVE_INFINITY;
+			
+			private var _enterFrameFlag:Boolean=false;
+			
+			[Bindable]
+			private var _loadGroupY:Number=0;
+
+			[Bindable]
+			private var _loadGroupPullUpY:Number=FlexGlobals.topLevelApplication.stage.stageHeight - 50 * 2;
+
+			[Bindable]
+			private var _listFunction:Function;
+
+
+			public function set dataProvider(dp:ArrayCollection):void
+			{
+				_dp=dp;
+			}
+
+			public function set getFeedFunction(feedFunction:Function):void
+			{
+				_getFeed=feedFunction;
+			}
+
+			public function set listState(state:String):void
+			{
+				currentState=state;
+			}
+
+			public function get listState():String
+			{
+				return currentState;
+			}
+
+
+			public function cleanUp():void
+			{
+				if (list)
+				{
+					if (list.scroller && list.hasEventListener(TouchInteractionEvent.TOUCH_INTERACTION_START))
+					{
+						list.scroller.removeEventListener(TouchInteractionEvent.TOUCH_INTERACTION_START, onChangeStart);
+					}
+					if(list.hasEventListener(MouseEvent.MOUSE_UP)){
+						list.removeEventListener(MouseEvent.MOUSE_UP, onMouseStop);
+					}
+					if(list.hasEventListener(MouseEvent.ROLL_OUT)){
+						list.removeEventListener(MouseEvent.ROLL_OUT, onMouseStop);
+					}
+					if(list.hasEventListener(Event.ENTER_FRAME)){
+						list.removeEventListener(Event.ENTER_FRAME, onEnterFrame);
+					}
+				}
+			}
+
+			public function setPostFeedReceivedState():void
+			{
+				currentState=currentState == "loading" ? "normal" : currentState;
+				removeLoaderIR();
+			}
+
+			public function set listItemRendererFunction(value:Function):void
+			{
+				_listFunction=value;
+			}
+
+			/////////////////////////////////////////////////////////////////////////
+			// PULL TO REFRESH BEHAVIOUR
+
+			protected function onCComplete(event:FlexEvent):void
+			{
+				var scroller:Scroller=list.scroller;
+				scroller.addEventListener(TouchInteractionEvent.TOUCH_INTERACTION_START, onChangeStart);
+			}
+
+			protected function onChangeStart(event:TouchInteractionEvent):void
+			{
+				if (_enterFrameFlag)
+				{
+					return;
+				}
+				list.addEventListener(MouseEvent.MOUSE_UP, onMouseStop);
+				list.addEventListener(MouseEvent.ROLL_OUT, onMouseStop);
+				list.addEventListener(Event.ENTER_FRAME, onEnterFrame);
+				_enterFrameFlag=true;
+			}
+
+			protected function onEnterFrame(event:Event):void
+			{
+				var vScroll:Number=list.scroller.verticalScrollBar.value;
+				if (_previousVScrollValue == vScroll)
+				{
+					return;
+				}
+				_previousVScrollValue=vScroll;
+
+				if (vScroll < -20)
+				{
+					currentState="pulled";
+					if (vScroll < SCROLL_POSITION_TRIGGER_REFRESH)
+					{
+						if (arrowImage.rotation == 0)
+						{
+							arrowImage.rotation=180;
+						}
+						loadText.message="Release to refesh...";
+
+					}
+					else
+					{
+						if (arrowImage.rotation == 180)
+						{
+							arrowImage.rotation=0;
+						}
+						loadText.message="Pull down to refresh";
+					}
+					_loadGroupY=-vScroll - loadingGroup.height;
+				}
+				else
+				{
+					_loadGroupY=0;
+					currentState="normal";
+				}
+
+				if (list.layout.getVerticalScrollPositionDelta(NavigationUnit.END) < 50)
+				{
+					if (_loaderAdded == false)
+					{
+						var vo:Object=new Object();
+						vo.type="loading";
+						_dp.addItemAt(vo, _dp.length);
+						currentState="pulledUp";
+						_loaderAdded=true;
+						dispatchEvent(new Event("loadOlder"));
+					}
+				}
+
+			}
+
+			private function removeLoaderIR():void
+			{
+				
+				for (var i:uint=0; i < _dp.length; i++)
+				{
+					if (_dp[i].type == "loading")
+					{
+						_dp.removeItemAt(i);
+						_loaderAdded=false;
+					}
+				}
+			}
+
+			protected function onMouseStop(event:MouseEvent):void
+			{
+				var vScroll:Number=list.scroller.verticalScrollBar.value;
+				if (currentState == "pulled" && vScroll < SCROLL_POSITION_TRIGGER_REFRESH)
+				{
+					_getFeed();
+					currentState="loading";
+					loadGroup.includeInLayout=true;
+				}
+				else
+				{
+					currentState="normal";
+				}
+				_loadGroupY=0;
+				if (_enterFrameFlag)
+				{
+					list.removeEventListener(MouseEvent.MOUSE_UP, onMouseStop);
+					list.removeEventListener(MouseEvent.ROLL_OUT, onMouseStop);
+					list.removeEventListener(Event.ENTER_FRAME, onEnterFrame);
+					_enterFrameFlag=false;
+				}
+			}
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<s:Fade id='fadeIn'
+				target="{loadingGroup}"
+				duration="500"
+				alphaFrom="0"
+				alphaTo="1"/>
+	</fx:Declarations>
+
+
+
+	<s:transitions>
+		<s:Transition fromState="loading"
+					  toState="normal">
+			<s:Parallel effectEnd="loadGroup.includeInLayout = false;"
+						duration="500">
+				<s:Fade id="fadeInLG"
+						target="{loadGroup}"
+						alphaFrom="1"
+						alphaTo="0"/>
+				<s:Resize target="{loadGroup}"
+						  heightTo="0">
+					<s:easer>
+						<s:Sine/>
+					</s:easer>
+				</s:Resize>
+			</s:Parallel>
+		</s:Transition>
+	</s:transitions>
+
+	<styles:GraphicsLib id="graphicsLib"/>
+	
+	<s:VGroup width="100%"
+			  height="100%">
+
+		<s:HGroup id="loadGroup"
+				  width="100%"
+				  height="50"
+				  visible.loading="true"
+				  visible.normal="false"
+				  visible.pulled="false"
+				  visible.pulledUp="false"
+				  includeInLayout="false"
+				  verticalAlign="middle"
+				  horizontalAlign="center">
+			<s:BusyIndicator width="30"
+							 height="30"
+							 symbolColor="#ffffff"/>
+			<loadingAndErrorMessage:LoadingAndErrorMessageComponent id="loadanim"
+																	message="loading..."/>
+		</s:HGroup>
+
+		<s:List id="list"
+				useVirtualLayout="false"
+				horizontalScrollPolicy="off"
+				dataProvider="{_dp}"
+				width="100%"
+				height="100%"
+				contentBackgroundAlpha="0"
+				itemRendererFunction="{_listFunction}">
+		</s:List>
+
+	</s:VGroup>
+	<s:HGroup id="loadingGroup"
+			  horizontalAlign="center"
+			  verticalAlign="middle"
+			  width="100%"
+			  visible.pulled="true"
+			  visible.normal="false"
+			  visible.loading="false"
+			  visible.pulledUp="false"
+			  includeInLayout.pulled="true"
+			  includeInLayout.normal="false"
+			  includeInLayout.loading="false"
+			  includeInLayout.pulledUp="false"
+			  height="50"
+			  y="{_loadGroupY}">
+		<s:Image id="arrowImage"
+				 source="@Embed('assets/images/pullDownList/arrowBlack.png')"/>
+		<loadingAndErrorMessage:LoadingAndErrorMessageComponent id="loadText"
+																message="Pull down to refresh..."
+																/>
+	</s:HGroup>
+
+</s:SkinnableContainer>
