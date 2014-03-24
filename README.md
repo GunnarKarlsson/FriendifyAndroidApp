@@ -40,8 +40,6 @@ Friendiy was offered in different versions, each with a unique patterns, includi
 
 The project was written in ActionScript 3.0 and mxml. It requires the Adobe air flash plugin to run on Android devices.
 
-[![Get it on Google Play](http://www.android.com/images/brand/get_it_on_play_logo_small.png)](http://play.google.com/store/apps/details?id=air.com.squidzoo.friendifyDots)
-
 ## Licenses
 
     Copyright © 2011 - 2013 Gunnar Karlsson
