@@ -1,0 +1,28 @@
+# Build and release
+bin-debug/
+bin-release/
+bin-release-temp/
+[Oo]bj/
+[Bb]in/
+
+# Flash / AIR packages
+*.swf
+*.air
+*.ipa
+*.apk
+*.ane
+
+# Signing certificates
+*.p12
+*.pfx
+*.keystore
+
+# OS and editor
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# IntelliJ / other IDEs
+.idea/
+*.iml
